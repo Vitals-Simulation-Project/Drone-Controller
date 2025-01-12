@@ -1,9 +1,6 @@
-import setup_path 
 import airsim
 import tempfile
 import os
-import numpy as np
-import cv2
 import pprint
 
 # connect to the AirSim simulator
