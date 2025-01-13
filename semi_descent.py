@@ -6,14 +6,11 @@ import pprint
 import time
 
 # directory to store pictures
-imgDir = r'C:\Users\FierceWalrus\Documents\Senior Design\UE 5.2\Temp\Pictures'
+imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 
-# check that directory exists
-isExist = os.path.exists(imgDir)
-if not isExist:
-    # make directory if not already there
+# create directory if it does not exist
+if not os.path.exists(imgDir):
     os.makedirs(imgDir)
-    print('Created: ' + imgDir)
 
 # set up client object to access multirotor drone
 client = airsim.MultirotorClient()
