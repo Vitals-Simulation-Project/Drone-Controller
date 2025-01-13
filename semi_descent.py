@@ -1,4 +1,4 @@
-import airsim
+import airsim # type: ignore
 import os
 import numpy as np
 import cv2
@@ -24,6 +24,8 @@ client.armDisarm(True)
 client.takeoffAsync().join()
 client.moveToPositionAsync(-10, 10, -10, 5).join()
 
+client.moveToPositionAsync(10, 10, -10, 5).join()
+
 # image collection loop
 while True:
 
@@ -47,20 +49,23 @@ while True:
 
     time.sleep(0.1)
 
-# save images
+# Save images
 for idx, response in enumerate(responses):
     filename = os.path.join(imgDir, str(idx))
     if response.pixels_as_float:
         print("Type %d, size %d" % (response.image_type, len(response.image_data_float)))
         airsim.write_pfm(os.path.normpath(filename + '.pfm'), airsim.get_pfm_array(response))
-    elif response.compress: #png format
+    elif response.compress:  # Compressed PNG format
         print("Type %d, size %d" % (response.image_type, len(response.image_data_uint8)))
         airsim.write_file(os.path.normpath(filename + '.png'), response.image_data_uint8)
-    else: #uncompressed array
+    else:  # Uncompressed array
         print("Type %d, size %d" % (response.image_type, len(response.image_data_uint8)))
-        img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8) # get numpy array
-        img_rgb = img1d.reshape(response.height, response.width, 3) # reshape array to 4 channel image array H X W X 3
-        cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+        img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8)  # Use frombuffer
+        if img1d.size == response.height * response.width * 3:  # Check array size
+            img_rgb = img1d.reshape(response.height, response.width, 3)
+            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb)  # Save as PNG
+        else:
+            print("Error: Image size mismatch. Skipping this image.")
 
 # end connection
 client.enableApiControl(False)

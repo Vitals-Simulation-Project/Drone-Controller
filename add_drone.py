@@ -1,4 +1,4 @@
-import airsim
+import airsim # type: ignore
 import tempfile
 import os
 import pprint
