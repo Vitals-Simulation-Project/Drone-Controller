@@ -75,7 +75,10 @@ response = chat(
     messages = [
         {
             "role": "user",
-            "content": "You control a single drone by sending it a series of coordinates. The drone will fly to each coordinate in order. The coordinates are in the form of a list of lists of 3 float numbers. For example, [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]] would be two coordinates. The first coordinate is [1.0, 2.0, 3.0] and the second coordinate is [4.0, 5.0, 6.0]. The coordinates in each sub-list are x position, y position, and z position, respectively. Move the drone in a square pattern by giving a list of coordinates centered around 0 0 0."
+            "content": "CONTEXT: You control a single drone by sending it a series of coordinates. \
+            The drone will fly to each coordinate in order. The coordinates are in the form of a list of lists of 3 float numbers. \
+            For example, [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]] would be two coordinates. The coordinates in each sub-list are x position, y position, and z position, \
+            respectively. COMMAND: Move the drone in a square pattern by creating a list of coordinates centered around 0 0 0."
         }
     ],
     model = MODEL,
@@ -86,4 +89,4 @@ message = Message.model_validate_json(response.message.content)
 print(message)
 
 for i in range(len(message.coordinates)):
-    client.moveToPositionAsync(message.coordinates[i][0], message.coordinates[i][1], message.coordinates[i][2], 1).join()
+    client.moveToPositionAsync(message.coordinates[i][0], message.coordinates[i][1], message.coordinates[i][2], 5, vehicle_name="0").join()

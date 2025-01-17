@@ -64,7 +64,9 @@ data = {
     "messages": [
         {
             "role": "user",
-            "content": "Create a course in the shape of a circle using the xyz coordinate system. The circle should have a radius of 5 and be centered at the (0, 0, 0). Return the answer as 4 lines of 3 numbers separated by spaces. Each line in the output represents a point of the circle, for example the northenmost point of the circle would be 0 5 0. Only output the coordinates of the circle, do not include any other information."
+            "content": "You control a single drone. Move it to the coordinates (0, 0, 0), (0, 0, 10), and (0, 0, 20) by sending it a series of coordinates. \
+                The drone will move to the coordinates in the order you send them. \
+                    Only respond with the coordinates in the format 'x y z' separated by a new line for each coordinate."
         }
     ],
     "stream": False
