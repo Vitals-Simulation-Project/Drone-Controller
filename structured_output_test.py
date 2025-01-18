@@ -78,7 +78,7 @@ response = chat(
             "content": "CONTEXT: You control a single drone by sending it a series of coordinates. \
             The drone will fly to each coordinate in order. The coordinates are in the form of a list of lists of 3 float numbers. \
             For example, [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]] would be two coordinates. The coordinates in each sub-list are x position, y position, and z position, \
-            respectively. COMMAND: Move the drone in a square pattern by creating a list of coordinates centered around 0 0 0."
+            respectively. COMMAND: Move the drone in a square pattern by creating a list of coordinates centered around 0 0 0 and each side length of the square being 5."
         }
     ],
     model = MODEL,
@@ -88,5 +88,13 @@ response = chat(
 message = Message.model_validate_json(response.message.content)
 print(message)
 
+client.takeoffAsync(5, vehicle_name="0").join()
+time.sleep(5)
+
+print("Moving to positions...")
+
 for i in range(len(message.coordinates)):
     client.moveToPositionAsync(message.coordinates[i][0], message.coordinates[i][1], message.coordinates[i][2], 5, vehicle_name="0").join()
+    print("Moved to position: ", message.coordinates[i])
+    # wait a few seconds before moving to the next position
+    time.sleep(3)
