@@ -38,7 +38,7 @@ img_rgb = img1d.reshape(response.height, response.width, 3)
 # img_rgb = np.flipud(img_rgb)
 
 # write to png 
-airsim.write_png(os.path.normpath("test" + '.png'), img_rgb) 
+airsim.write_png(os.path.normpath("images/test" + '.png'), img_rgb) 
 
 # end connection
 client.enableApiControl(False)
