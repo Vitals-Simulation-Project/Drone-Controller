@@ -25,10 +25,10 @@ client.armDisarm(True, vehicle_name=drone)
 
 # Async methods returns Future. Call join() to wait for task to complete.
 client.takeoffAsync(vehicle_name=drone).join()
-client.moveToPositionAsync(-10, 10, -100, 5).join()
+client.moveToPositionAsync(-10, 10, -25, 5).join()
 
 
-responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False)])
+responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.DepthVis, False, False)])
 response = responses[0]
 
 # get numpy array
