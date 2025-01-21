@@ -5,6 +5,9 @@ import cv2
 import pprint
 import time
 
+
+drone = "0"
+
 # directory to store pictures
 imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 
@@ -17,12 +20,12 @@ client = airsim.MultirotorClient()
 
 # connect to AirSim simulator
 client.confirmConnection()
-client.enableApiControl(True)
-client.armDisarm(True)
+client.enableApiControl(True, vehicle_name=drone)
+client.armDisarm(True, vehicle_name=drone)
 
 # Async methods returns Future. Call join() to wait for task to complete.
-client.takeoffAsync().join()
-client.moveToPositionAsync(-10, 10, -10, 5).join()
+client.takeoffAsync(vehicle_name=drone).join()
+client.moveToPositionAsync(-10, 10, -100, 5).join()
 
 
 responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False)])
