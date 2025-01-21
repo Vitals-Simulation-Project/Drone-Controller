@@ -1,64 +1,77 @@
-from ollama import ChatResponse, chat # type: ignore
-
+from ollama import ChatResponse, chat  # type: ignore
 
 def add_two_numbers(a: int, b: int) -> int:
-  """
-  Add two numbers
+    """
+    Add two numbers
 
-  Args:
-    a (int): The first number
-    b (int): The second number
+    Args:
+        a (int): The first number
+        b (int): The second number
 
-  Returns:
-    int: The sum of the two numbers
-  """
-  return a + b
-
+    Returns:
+        int: The sum of the two numbers
+    """
+    return int(a) + int(b)
 
 def subtract_two_numbers(a: int, b: int) -> int:
-  """
-  Subtract two numbers
-  """
-  return a - b
+    """
+    Subtract two numbers
 
+    Args:
+        a (int): The first number
+        b (int): The second number
 
+    Returns:
+        int: The difference of the two numbers
+    """
+    return int(a) - int(b)
 
-
-messages = [{'role': 'user', 'content': 'What is three plus one?'}]
+# Initial message from the user
+messages = [{'role': 'user', 'content': 'Add the numbers 1 and 2. Then subtract 3 from the result.'}]
 print('Prompt:', messages[0]['content'])
 
+# Available functions
 available_functions = {
-  'add_two_numbers': add_two_numbers,
-  'subtract_two_numbers': subtract_two_numbers,
+    'add_two_numbers': add_two_numbers,
+    'subtract_two_numbers': subtract_two_numbers,
 }
 
+# Call the model for the initial response
 response: ChatResponse = chat(
-  'llama3.2:latest',
-  messages=messages,
-  tools=[add_two_numbers, subtract_two_numbers],
+    'llama3.2:latest',
+    messages=messages,
+    tools=[add_two_numbers, subtract_two_numbers],
 )
 
-if response.message.tool_calls:
-  # There may be multiple tool calls in the response
-  for tool in response.message.tool_calls:
-    # Ensure the function is available, and then call it
-    if function_to_call := available_functions.get(tool.function.name):
-      print('Calling function:', tool.function.name)
-      print('Arguments:', tool.function.arguments)
-      output = function_to_call(**tool.function.arguments)
-      print('Function output:', output)
+# Process tool calls in sequence
+for _ in range(5):  # Assume a maximum of 5 operations for demonstration
+    if response.message.tool_calls:
+        for tool in response.message.tool_calls:
+            # Ensure the function is available, and then call it
+            if function_to_call := available_functions.get(tool.function.name):
+                print('Calling function:', tool.function.name)
+                print('Arguments:', tool.function.arguments)
+                output = function_to_call(**tool.function.arguments)
+                print('Function output:', output)
+
+                # Add the tool's result back to messages
+                messages.append({
+                    'role': 'tool',
+                    'content': str(output),
+                    'name': tool.function.name
+                })
+
+                # Add the tool's result as input for the next operation
+                messages.append({'role': 'user', 'content': f'Continue with result {output}'})
+            else:
+                print('Function', tool.function.name, 'not found')
+        
+        # Get the next response using updated messages
+        response = chat('llama3.2:latest', messages=messages)
     else:
-      print('Function', tool.function.name, 'not found')
+        print('No tool calls returned from model')
+        break
 
-# Only needed to chat with the model using the tool call results
-if response.message.tool_calls:
-  # Add the function response to messages for the model to use
-  messages.append(response.message)
-  messages.append({'role': 'tool', 'content': str(output), 'name': tool.function.name})
-  print('Messages:', messages)
-  # Get final response from model with function outputs
-  final_response = chat('llama3.2:latest', messages=messages)
-  print('Final response:', final_response.message.content)
-
-else:
-  print('No tool calls returned from model')
+# Final output from the model
+if not response.message.tool_calls:
+    print('Final response:', response.message.content)
