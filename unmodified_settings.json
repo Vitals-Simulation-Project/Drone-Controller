@@ -21,8 +21,22 @@
       "ControlPort": 139,
       "LocalHostIp": "172.21.96.1",
       "Cameras": {
-        "below-0": {
+        "front-center": {
           "CaptureSettings": [
+            {
+              "ImageType": -1,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 10
+            },
             {
               "ImageType": 0,
               "Width": 512,
@@ -34,21 +48,7 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "",
-              "OrthoWidth": 20
-            },
-            {
-              "ImageType": 3,
-              "Width": 512,
-              "Height":288,
-              "FOV_Degrees": 90,
-              "AutoExposureSpeed": 100,
-              "AutoExposureBias": 0,
-              "AutoExposureMaxBrightness": 0.64,
-              "AutoExposureMinBrightness": 0.03,
-              "MotionBlurAmount": 0,
-              "TargetGamma": 1,
-              "ProjectionMode": "",
+              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
             },
             {
@@ -62,11 +62,11 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "",
+              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
             }
+
           ],
-	
           "Gimbal": {
             "Stabilization": 1,
             "Pitch": -90,
@@ -81,7 +81,7 @@
           "Z": 0
 
         },
-        "front-0": {
+        "front": {
           "CaptureSettings": [
             {
               "ImageType": 0,
@@ -118,13 +118,13 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -45,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
           "Y": 0,
           "Z": 0
-	},
+          },
       "right": {
         "CaptureSettings": [
           {
@@ -168,8 +168,8 @@
         "X": 1,
         "Y": 0,
         "Z": 0
-        } 
-          },	
+        }  
+      },
       "Sensors": {
         "Distance": {
           "SensorType": 5,
@@ -877,23 +877,23 @@
     "SubWindows": [
       {
         "WindowID": 0,
-        "CameraName": "below-0",
+        "CameraName": "front",
         "ImageType": 0,
         "VehicleName": "0",
         "Visible": true
       },
       {
         "WindowID": 1,
-        "CameraName": "front-0",
+        "CameraName": "front",
         "ImageType": 0,
-        "VehicleName": "0",
+        "VehicleName": "2",
         "Visible": true
       },
       {
         "WindowID": 2,
-        "CameraName": "front-0",
-        "ImageType": 5,
-        "VehicleName": "0",
+        "CameraName": "front",
+        "ImageType": 0,
+        "VehicleName": "3",
         "Visible": true
       }
     ]
