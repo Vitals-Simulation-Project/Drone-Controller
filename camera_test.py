@@ -25,17 +25,17 @@ client.armDisarm(True, vehicle_name=drone)
 
 # Async methods returns Future. Call join() to wait for task to complete.
 client.takeoffAsync(vehicle_name=drone).join()
-client.moveToPositionAsync(-10, 10, -25, 5).join()
+client.moveToPositionAsync(-10, 100, -25, 5).join()
 
 
 # responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.DepthVis, False, False)])
 responses = client.simGetImages([
     airsim.ImageRequest(camera_name = "front-0", image_type=airsim.ImageType.DepthVis, pixels_as_float = False, compress = False),  #depth visualization image
-    airsim.ImageRequest("front-0", airsim.ImageType.DepthPerspective, pixels_as_float = True, compress = True), #depth in perspective projection
-    airsim.ImageRequest("front-0", airsim.ImageType.Scene, pixels_as_float = False, compress = True), #scene vision image in png format
-    airsim.ImageRequest("front-0", airsim.ImageType.Scene, pixels_as_float = False, compress = False)])  #scene vision image in uncompressed RGBA array
+    airsim.ImageRequest(camera_name = "front-0", image_type=airsim.ImageType.Segmentation, pixels_as_float = False, compress = False), 
+    airsim.ImageRequest(camera_name = "front-0", image_type=airsim.ImageType.Infrared, pixels_as_float = False, compress = False), # infrared image
+    airsim.ImageRequest(camera_name = "front-0", image_type=airsim.ImageType.Scene, pixels_as_float = False, compress = False)])  #scene vision image in uncompressed RGBA array
 
-
+print('Retrieved images: %d' % len(responses))
 
 
 for idx, response in enumerate(responses):
