@@ -4,6 +4,9 @@ import multiprocessing as mp
 import random
 import time
 
+# make a global queue for images to process
+
+
 def singleDroneController(droneName, droneCount, command_queue, status_queue):
     """ Drone process that listens for movement commands and sends status updates. """
     print(f"In single controller, Drone name: {droneName}")
