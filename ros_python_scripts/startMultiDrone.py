@@ -16,10 +16,9 @@ import multiprocessing as mp
 # Airsim multiple drone Contol with Multiprocessing Demo
 print('start multiDrone')
 if __name__ == '__main__': # Only runs if this is main processes
-    mp.set_start_method('fork') # windows specific. Change based on OS.
-    droneCount = mp.cpu_count() - 5
+    mp.set_start_method('spawn') # windows specific. Change based on OS.
+    drone_count = 5
 
-    for x in range(4): # str(x) = the vechical_name of the drone
+    for x in range(drone_count): # str(x) = the vechical_name of the drone
         droneName = str(x)
-        print(droneName)
-        mp.Process(target=singleDroneController, args=(droneName,5)).start()
+        mp.Process(target=singleDroneController, args=(droneName, drone_count)).start()
