@@ -3,6 +3,9 @@ import airsim  # type: ignore
 import multiprocessing as mp
 import random
 import time
+import os
+import numpy as np
+import cv2
 
 # make a global queue for images to process
 
@@ -20,6 +23,24 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
         new_position = airsim.Vector3r(current_position.x_val + x, current_position.y_val + y, current_position.z_val + z)    
         client.moveToPositionAsync(new_position.x_val, new_position.y_val, new_position.z_val, speed, vehicle_name=drone_name).join()
         return new_position
+    
+    def take_forward_scene_picture(drone_name):
+        camera_name = "front-" + drone_name
+        print(f"Taking picture from {camera_name}")
+        response = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Scene, vehicle_name=drone_name)
+        
+        filename = os.path.join("images", f"{camera_name}_scene")
+
+        # img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8) # get numpy array
+        # img_rgb = img1d.reshape(response.height, response.width, 3) # reshape array to 4 channel image array H X W X 3
+        # cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+
+        
+        print("Type %d, size %d" % (response.image_type, len(response.image_data_uint8)))
+        img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8) # get numpy array
+        img_rgb = img1d.reshape(response.height, response.width, 3) # reshape array to 4 channel image array H X W X 3
+        cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+
 
     while True:
         if not command_queue.empty():
@@ -35,6 +56,7 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
                 print(f"Drone {droneName} moving to ({x}, {y}, {z})")
                 new_position = move_drone_relative(droneName, x, y, z, 5)
                 status_queue.put((droneName, (new_position.x_val, new_position.y_val, new_position.z_val)))
+                take_forward_scene_picture(droneName)
 
 
 def parentController():
@@ -53,6 +75,9 @@ def parentController():
         p = mp.Process(target=singleDroneController, args=(drone_name, drone_count, command_queues[drone_name], status_queue))
         p.start()
         processes.append(p)
+
+    time.sleep(5)  # Wait for drones to take off
+
 
     try:
         while True:
@@ -94,4 +119,13 @@ def parentController():
         p.join()
 
 if __name__ == '__main__':
+
+    # directory to store pictures
+    imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
+
+    # create directory if it does not exist
+    if not os.path.exists(imgDir):
+        os.makedirs(imgDir)
+
+
     parentController()
