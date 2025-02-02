@@ -1,4 +1,3 @@
-from droneNode import globalVarSetup, takeOff
 import airsim  # type: ignore
 import multiprocessing as mp
 import random
@@ -7,7 +6,27 @@ import os
 import numpy as np
 import cv2
 
+
+
+LOCAL_IP = "172.21.96.1"
+
+
 # make a global queue for images to process
+
+
+
+# Enables api control, takes off drone, returns the client
+def takeOff(droneName):
+    client = airsim.MultirotorClient(LOCAL_IP)
+    client.confirmConnection()
+    client.enableApiControl(True, droneName)
+    client.armDisarm(True, droneName)
+    client.takeoffAsync(vehicle_name=droneName).join()
+
+    print("Drone " + droneName + " is ready to fly")
+
+    return client
+
 
 
 def singleDroneController(droneName, droneCount, command_queue, status_queue):
@@ -31,14 +50,9 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
         
         filename = os.path.join("images", f"{camera_name}_scene")
 
-        # img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8) # get numpy array
-        # img_rgb = img1d.reshape(response.height, response.width, 3) # reshape array to 4 channel image array H X W X 3
-        # cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+        img1d = np.frombuffer(response, dtype=np.uint8)
+        img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
 
-        
-        print("Type %d, size %d" % (response.image_type, len(response.image_data_uint8)))
-        img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8) # get numpy array
-        img_rgb = img1d.reshape(response.height, response.width, 3) # reshape array to 4 channel image array H X W X 3
         cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
 
 
@@ -76,7 +90,7 @@ def parentController():
         p.start()
         processes.append(p)
 
-    time.sleep(5)  # Wait for drones to take off
+    time.sleep(10)  # Wait for drones to take off
 
 
     try:
