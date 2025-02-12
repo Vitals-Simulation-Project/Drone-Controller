@@ -7,7 +7,7 @@ import time
 from scipy.spatial.transform import Rotation as R # type: ignore
 
 
-pixel_x, pixel_y = 400, 300  # Change based on your image
+pixel_x, pixel_y = 700, 300  # Change based on your image
 
 drone = "0"
 camera_name = "front-" + drone
@@ -90,7 +90,7 @@ def get_real_world_coordinates(client, pixel_x, pixel_y, camera_name, drone_name
 
     if len(pixel_coords) == 0:
         print("No valid LiDAR projections onto the image.")
-        return None, None, None
+        return None, None, None, None
 
     # === Find the Closest LiDAR Point to the Selected Pixel ===
     distances = np.linalg.norm(pixel_coords - np.array([pixel_x, pixel_y]), axis=1)
@@ -187,4 +187,5 @@ cv2.destroyAllWindows()
 move_drone_relative(drone, -real_world_x * 11, -real_world_y * 11, 0, 5)
 
 # end connection
+client.armDisarm(False, vehicle_name=drone)
 client.enableApiControl(False)
