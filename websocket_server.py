@@ -1,20 +1,37 @@
 import asyncio
 import websockets
-from test import sendCoordinates
 import json
 
 # Define the WebSocket server handler
 async def handler(websocket, path=8765):
 
     # Send a welcome message to the client
-    message = str("Client Connected")
-    await websocket.send(message)
+    AddWaypointMessage = {
+        "MessageType": "AddWaypoint",
+        "X": 5000,
+        "Y": -100000,
+        "Z": 5000
+    }
 
-    # Receive messages from the client
-    async for message in websocket:
-        print(f"Received message: {message}")
-        # Send the message back to the client
-        await websocket.send(f"Echo: {message}")
+    DeleteWaypointMessage = {
+        "MessageType": "DeleteWaypoint",
+        "ID": 1
+    }
+
+    MoveWaypointMessage = {
+        "MessageType": "MoveWaypoint",
+        "ID": 1,
+        "X": 10000,
+        "Y": -10000,
+        "Z": 5000
+    }
+
+    await asyncio.sleep(5)
+    await websocket.send(json.dumps(AddWaypointMessage))
+    await asyncio.sleep(5)
+    await websocket.send(json.dumps(MoveWaypointMessage))
+    await asyncio.sleep(5)
+    await websocket.send(json.dumps(DeleteWaypointMessage))
 
 # Start the server
 async def start_server():
