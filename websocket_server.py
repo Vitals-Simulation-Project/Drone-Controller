@@ -5,9 +5,11 @@ import json
 
 # Define the WebSocket server handler
 async def handler(websocket, path=8765):
+
     # Send a welcome message to the client
-    message = str(sendCoordinates())
+    message = str("Client Connected")
     await websocket.send(message)
+
     # Receive messages from the client
     async for message in websocket:
         print(f"Received message: {message}")
