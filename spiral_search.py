@@ -12,9 +12,9 @@ client.takeoffAsync().join()
 
 center_x, center_y = 0, 0  # Center of the spiral
 fixed_altitude = -10       # Fixed altitude (negative for AirSim)
-radius_increment = 1       # Increase in radius per loop
+radius_increment = 2       # Increase in radius per loop
 angle_step = 10            # Angle step for smoother movement (degrees)
-max_radius = 10            # Maximum radius for the spiral
+max_radius = 30            # Maximum radius for the spiral
 speed = 10                 # Speed (m/s)
 
 def spiral_search(client, center_x, center_y, fixed_altitude, radius_increment, angle_step, max_radius, speed):
