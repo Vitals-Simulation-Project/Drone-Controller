@@ -43,12 +43,12 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
         client.moveToPositionAsync(new_position.x_val, new_position.y_val, new_position.z_val, speed, vehicle_name=drone_name).join()
         return new_position
     
-    def take_forward_scene_picture(drone_name):
+    def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
         print(f"Taking picture from {camera_name}")
-        response = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Scene, vehicle_name=drone_name)
+        response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
         
-        filename = os.path.join("images", f"{camera_name}_scene")
+        filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
 
         img1d = np.frombuffer(response, dtype=np.uint8)
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
@@ -70,7 +70,7 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
                 print(f"Drone {droneName} moving to ({x}, {y}, {z})")
                 new_position = move_drone_relative(droneName, x, y, z, 5)
                 status_queue.put((droneName, (new_position.x_val, new_position.y_val, new_position.z_val)))
-                take_forward_scene_picture(droneName)
+                take_forward_picture(droneName, airsim.ImageType.Scene)
 
 
 def parentController():
