@@ -45,8 +45,17 @@ client.armDisarm(True, vehicle_name=drone)
 
 # Async methods returns Future. Call join() to wait for task to complete.
 client.takeoffAsync(vehicle_name=drone).join()
-move_drone_relative(drone, 150, 0, -60, 5)
-move_drone_relative(drone, 0, 50, 40, 5)
+client.rotateToYawAsync(-30, 5, vehicle_name=drone).join()
+move_drone_relative(drone, 120, 0, -30, 15)
+move_drone_relative(drone, 0, -55, 6, 5)
+
+# hover
+client.hoverAsync(vehicle_name=drone).join()
+
+
+
+# wait 1 sec
+time.sleep(3)
 
 take_forward_picture(drone, airsim.ImageType.Scene)
 take_forward_picture(drone, airsim.ImageType.Infrared)
