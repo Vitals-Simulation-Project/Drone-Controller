@@ -8,7 +8,7 @@ import cv2
 
 
 
-LOCAL_IP = "172.21.96.1"
+LOCAL_IP = "172.20.11.22"
 
 
 # make a global queue for images to process
@@ -73,11 +73,11 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
                 take_forward_picture(droneName, airsim.ImageType.Scene)
 
 
-def parentController():
+def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
     mp.set_start_method('spawn')  # Windows-specific start method
 
-    drone_count = 5
+    
     command_queues = {}  # Dictionary to store queues for sending commands
     status_queue = mp.Queue()  # Single queue for receiving updates
     processes = []  # List to store process references
@@ -141,5 +141,5 @@ if __name__ == '__main__':
     if not os.path.exists(imgDir):
         os.makedirs(imgDir)
 
-
-    parentController()
+    drone_count = 5
+    parentController(drone_count)
