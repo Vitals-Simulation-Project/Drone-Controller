@@ -43,17 +43,18 @@ client.confirmConnection()
 client.enableApiControl(True, vehicle_name=drone)
 client.armDisarm(True, vehicle_name=drone)
 
+client.takeoffAsync(vehicle_name=drone).join()
+
+client.moveToPositionAsync(220, -10, -50, 10, vehicle_name=drone).join()
+
 # print current coordinates
 state = client.getMultirotorState(vehicle_name=drone)
 current_position = state.kinematics_estimated.position
 print(f"Current position: {current_position.x_val}, {current_position.y_val}, {current_position.z_val}")
-print(state)
 
 # print gps coordinates
 print(f"GPS coordinates: {state.gps_location.latitude}, {state.gps_location.longitude}, {state.gps_location.altitude}")
 
-# Async methods returns Future. Call join() to wait for task to complete.
-client.takeoffAsync(vehicle_name=drone).join()
 
 
 
