@@ -15,7 +15,7 @@ def takeOff(droneName):
     client.armDisarm(True, droneName)
     client.takeoffAsync(vehicle_name=droneName).join()
 
-    print("Drone " + droneName + " is ready to fly")
+    # print("Drone " + droneName + " is ready to fly")
 
     return client
 
@@ -25,6 +25,7 @@ def singleDroneController(droneName, droneCount, command_queue, status_queue):
     
     # Initialize AirSim client and take off
     client = takeOff(droneName)
+    status_queue.put((droneName, "READY"))
 
     def move_drone_relative(drone_name, x, y, z, speed):
         state = client.getMultirotorState(vehicle_name=drone_name)

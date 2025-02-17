@@ -5,8 +5,26 @@ import time
 import os
 import numpy as np
 import cv2
+import requests
+import json
+from ollama import chat # type: ignore
+from pydantic import BaseModel
+
+# project imports
 import local_config
 import single_drone_controller as sdc
+from model_files.pull_model import load_model
+
+
+
+
+MODEL = "llava:7b" # model from Ollama
+URL = "http://localhost:11434/api/chat" 
+
+class Message(BaseModel):
+    truth_value: bool
+    topic: str
+
 
 
 
@@ -15,7 +33,15 @@ import single_drone_controller as sdc
 
 
 
-
+# send one message to load model
+response = chat(
+    'llama3.2',
+    messages=[
+    {'role': 'user', 'content': "hello"},
+    ],
+    stream=False,
+    format = Message.model_json_schema()
+)
 
 
 
@@ -23,6 +49,17 @@ def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
     mp.set_start_method('spawn')  # Windows-specific start method
 
+    # send one message to load model
+    response = chat(
+        'llama3.2',
+        messages=[
+        {'role': 'user', 'content': "hello"},
+        ],
+        stream=False,
+    )
+    print(response.message.content)
+
+    input("Press enter to continue")
     
     command_queues = {}  # Dictionary to store queues for sending commands
     status_queue = mp.Queue()  # Single queue for receiving updates
@@ -36,8 +73,14 @@ def parentController(drone_count):
         p.start()
         processes.append(p)
 
-    time.sleep(10)  # Wait for drones to take off
-
+    while status_queue.qsize() < drone_count:
+        print("Waiting for drones to be ready...")
+        time.sleep(5)  # Wait for all drones to be ready
+    
+    # pop all messages from the queue and print drone status
+    while not status_queue.empty():
+        drone_name, status = status_queue.get()
+        print(f"Drone {drone_name}: {status}")
 
     try:
         while True:
