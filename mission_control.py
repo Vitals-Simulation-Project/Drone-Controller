@@ -22,12 +22,34 @@ POINTS_OF_INTEREST = [
 ]
 
 
+
+# offsets to move drones to the POIs in a circle pattern
+WAYPOINT_OFFSETS = [
+    (0, 5, 0),
+    (0, -5, 0),
+    (5, 0, 0),
+    (-5, 0, 0),
+    (0, 0, 0),
+]
+
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 
-class Message(BaseModel):
-    truth_value: bool
-    topic: str
+
+
+# TO BE USED AS INPUT FOR THE MODEL
+# class Message(BaseModel):
+#     swarm_coordinates: tuple # coordinates of drone 0 to be used as the rough location of the swarm
+#     poi_coordinates: list[tuple]
+#     searched_areas: dict
+
+class VLMOutput(BaseModel):
+    waypoints: list[str]
+    drone_id: int
+    image_result: str # can be "heat signature detected", "no heat signature detected", "target confirmed", "target not confirmed"
+    target_location: tuple # location of the target
+
+    
 
 # message history, starts off with explaining what the model 
 # will be doing in the search and rescue mission
@@ -74,7 +96,7 @@ response = chat(
     {'role': 'user', 'content': "hello"},
     ],
     stream=False,
-    format = Message.model_json_schema()
+    format = VLMOutput.model_json_schema()
 )
 
 
@@ -98,6 +120,8 @@ def parentController(drone_count):
     command_queues = {}  # Dictionary to store queues for sending commands
     status_queue = mp.Queue()  # Single queue for receiving updates
     processes = []  # List to store process references
+    searched_areas = {} # Dictionary containing areas that have already been searched
+
 
     # Create and start processes
     for x in range(drone_count):
