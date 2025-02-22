@@ -44,7 +44,7 @@ URL = "http://localhost:11434/api/chat"
 #     searched_areas: dict
 
 class VLMOutput(BaseModel):
-    waypoints: list[str]
+    waypoints: list[int] # id of the waypoint
     drone_id: int
     image_result: str # can be "heat signature detected", "no heat signature detected", "target confirmed", "target not confirmed"
     target_location: tuple # location of the target

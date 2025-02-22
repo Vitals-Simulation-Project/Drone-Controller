@@ -88,22 +88,22 @@ move_drone_relative(drone, 0, 0, -25, 5).join()
 
 # get initial coordinates
 initial_coords = get_GPS_coordinates(drone)
-print("Initial coordinates: " + str(initial_coords))
+#print("Initial coordinates: " + str(initial_coords))
 
 # move drone left 20 meters
-f2 = move_drone_relative(drone, 0, -20, 0, 5).join()
+move_drone_relative(drone, 0, -20, 0, 5).join()
 
 
 # get final coordinates
-final_coords = get_GPS_coordinates(drone)
-print("Final coordinates: " + str(final_coords))
+#final_coords = get_GPS_coordinates(drone)
+#print("Final coordinates: " + str(final_coords))
 
 
 # calcualte the distance moved
-distance_moved = np.sqrt((final_coords.latitude - initial_coords.latitude)**2 + (final_coords.longitude - initial_coords.longitude)**2)
+#distance_moved = np.sqrt((final_coords.latitude - initial_coords.latitude)**2 + (final_coords.longitude - initial_coords.longitude)**2)
 
 
-print("Distance moved: " + str(distance_moved))
+#print("Distance moved: " + str(distance_moved))
 
 
 
