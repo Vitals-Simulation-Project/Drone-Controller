@@ -21,7 +21,7 @@ def takeOff(droneName):
 
 def singleDroneController(droneName, droneCount, command_queue, status_queue):
     """ Drone process that listens for movement commands and sends status updates. """
-    print(f"In single controller, Drone name: {droneName}")
+    #print(f"In single controller, Drone name: {droneName}")
     
     # Initialize AirSim client and take off
     client = takeOff(droneName)

@@ -105,17 +105,9 @@ def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
     mp.set_start_method('spawn')  # Windows-specific start method
 
-    # send one message to load model
-    response = chat(
-        'llama3.2',
-        messages=[
-        {'role': 'user', 'content': "hello"},
-        ],
-        stream=False,
-    )
-    print(response.message.content)
-
-    input("Press enter to continue")
+    print("Loading VLM...")
+    load_model(MODEL)
+    
     
     command_queues = {}  # Dictionary to store queues for sending commands
     status_queue = mp.Queue()  # Single queue for receiving updates

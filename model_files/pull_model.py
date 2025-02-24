@@ -45,7 +45,7 @@ def load_model(MODEL):
 
     # wait a few seconds to make sure the model is loaded
     time.sleep(5)
-    input("Ensure all other software is closed. Press Enter to continue.")
+    input("Press Enter to continue.")
 
 if __name__ == "__main__":
     print("This script is not meant to be run directly.")
