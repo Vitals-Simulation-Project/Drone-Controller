@@ -2,6 +2,7 @@ import airsim  # type: ignore
 import multiprocessing as mp
 import random
 import time
+import heapq
 import os
 import numpy as np
 import cv2
@@ -16,32 +17,37 @@ import single_drone_controller as sdc
 from model_files.pull_model import load_model
 
 
-# poi1 is a small shack in front of the spawn area
-POINTS_OF_INTEREST = [
-    {"name": "POI1", "location": [0.0020828851586628867, -5.421523784302704e-05, 49.92039108276367]},
-]
-
-
-
-# offsets to move drones to the POIs in a circle pattern
-WAYPOINT_OFFSETS = [
-    (0, 5, 0),
-    (0, -5, 0),
-    (5, 0, 0),
-    (-5, 0, 0),
-    (0, 0, 0),
-]
-
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
+TARGET_FOUND = False
 
 
 
-# TO BE USED AS INPUT FOR THE MODEL
-# class Message(BaseModel):
-#     swarm_coordinates: tuple # coordinates of drone 0 to be used as the rough location of the swarm
-#     poi_coordinates: list[tuple]
-#     searched_areas: dict
+
+# Waypoint class to store the name, location, and priority of each waypoint
+# using a priority queue to prioritize waypoints
+# location is a list of x, y, z Unreal Engine coordinates
+# priority is 3 for user-assigned waypoints, 2 for dropped waypoints that must be revisited, and 1 for regular waypoints
+class Waypoint:
+    def __init__(self, name, location, priority):
+        self.name = name
+        self.location = location
+        self.priority = priority
+
+    def __lt__(self, other):
+        return self.priority > other.priority 
+    
+
+# poi1 is a small shack in front of the spawn area
+waypoint_queue = []
+heapq.heappush(waypoint_queue, Waypoint("POI1", [1000, 5000, 500], 10))
+
+
+
+
+
+
+
 
 class VLMOutput(BaseModel):
     waypoints: list[int] # id of the waypoint
@@ -84,20 +90,12 @@ message_history = [
 
 
 
-# make a global queue for images to process
+# global queue for images to process
 
 
 
 
-# send one message to load model
-response = chat(
-    'llama3.2',
-    messages=[
-    {'role': 'user', 'content': "hello"},
-    ],
-    stream=False,
-    format = VLMOutput.model_json_schema()
-)
+
 
 
 
@@ -137,7 +135,12 @@ def parentController(drone_count):
 
 
     try:
-        while True:
+        while not TARGET_FOUND:
+            
+
+            # first assign waypoints to any waiting drones
+            
+
             # Receive status updates from drones
             while not status_queue.empty():
                 drone_name, status = status_queue.get()
@@ -174,6 +177,12 @@ def parentController(drone_count):
     # Wait for all processes to finish
     for p in processes:
         p.join()
+
+
+
+
+
+
 
 if __name__ == '__main__':
 
