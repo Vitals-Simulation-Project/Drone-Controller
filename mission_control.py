@@ -9,7 +9,7 @@ import cv2
 import requests
 import json
 from ollama import chat # type: ignore
-from pydantic import BaseModel
+from pydantic import BaseModel # type: ignore
 
 # project imports
 import local_config
@@ -19,7 +19,7 @@ from model_files.pull_model import load_model
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
-TARGET_FOUND = False
+TARGET_FOUND = False # global variable to stop the search loop when the target is found
 
 
 
@@ -38,9 +38,6 @@ class Waypoint:
         return self.priority > other.priority 
     
 
-# poi1 is a small shack in front of the spawn area
-waypoint_queue = []
-heapq.heappush(waypoint_queue, Waypoint("POI1", [1000, 5000, 500], 10))
 
 
 
@@ -107,30 +104,37 @@ def parentController(drone_count):
     load_model(MODEL)
     
     
-    command_queues = {}  # Dictionary to store queues for sending commands
-    status_queue = mp.Queue()  # Single queue for receiving updates
-    processes = []  # List to store process references
-    searched_areas = {} # Dictionary containing areas that have already been searched
+    current_target_dictionary = {}  # Dictionary to store the current target waypoint of each drone
+    status_dictionary = {} # Dictionary to store status of each drone
+    processes = []  # List to store process references for each drone
+
+
+
+    # poi1 is a small shack in front of the spawn area
+    waypoint_queue = []
+    heapq.heappush(waypoint_queue, Waypoint("POI1", [1000, 5000, 500], 10))
+
+    
+
 
 
     # Create and start processes
     for x in range(drone_count):
         drone_name = str(x)
-        command_queues[drone_name] = mp.Queue()
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, drone_count, command_queues[drone_name], status_queue))
+        current_target_dictionary[drone_name] = None # would be a tuple containing waypoint name and (x, y, z) coordinates 
+        status_dictionary[drone_name] = "INITIALIZING"
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, drone_count, current_target_dictionary[drone_name], status_dictionary[drone_name], TARGET_FOUND))
         p.start()
         processes.append(p)
 
 
     # Wait for all drones to be ready
-    while status_queue.qsize() < drone_count:
-        print("Waiting for drones to be ready...")
-        time.sleep(5)
-    
-    # pop all messages from the queue and print drone status
-    while not status_queue.empty():
-        drone_name, status = status_queue.get()
-        print(f"Drone {drone_name}: {status}")
+    for drone in status_dictionary:
+        if status_dictionary[drone] == "READY":
+            print(f"Drone {drone} is ready.")
+        else:
+            time.sleep(0.1)
+
 
 
 
@@ -139,40 +143,22 @@ def parentController(drone_count):
             
 
             # first assign waypoints to any waiting drones
-            
+            for drone_name in status_dictionary:
+                if status_dictionary[drone_name] == "WAITING":
+                    if len(waypoint_queue) > 0:
+                        next_waypoint = heapq.heappop(waypoint_queue)
+                        current_target_dictionary[drone_name] = (next_waypoint.name, next_waypoint.location)
+                    else:
+                        print(f"No waypoints available for Drone {drone_name}")
 
-            # Receive status updates from drones
-            while not status_queue.empty():
-                drone_name, status = status_queue.get()
-                print(f"Update from Drone {drone_name}: {status}")
 
-            user_input = input("Enter 'rand' for random movement or 'STOP' to quit: ")
 
-            if user_input == "STOP":
-                for q in command_queues.values():
-                    q.put("STOP")  # Stop all drones
-                break
 
-            elif user_input == "rand":
-                for drone_name, q in command_queues.items():
-                    x = random.uniform(-50, 50)
-                    y = random.uniform(-50, 50)
-                    z = random.uniform(-20, -5)  # Stay within flight limits
-                    q.put((x, y, z))  # Send position command to drone
-            else:
-                # Parse the input
-                try:
-                    x, y, z = map(float, user_input.split())
-                    for q in command_queues.values():
-                        q.put((x, y, z))
-                except ValueError:
-                    print("Invalid input. Type 'rand' for random movement or 'STOP' to exit.")
-
-            time.sleep(1)  # Give some time for status updates
+            time.sleep(1)  # Give some time between cycles
     
     except KeyboardInterrupt:
-        for q in command_queues.values():
-            q.put("STOP")
+        for p in processes:
+            p.terminate()
 
     # Wait for all processes to finish
     for p in processes:
