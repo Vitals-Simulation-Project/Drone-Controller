@@ -19,7 +19,7 @@
       "EnableTrace": false,
       "ControlIp": "172.17.0.1",
       "ControlPort": 139,
-      "LocalHostIp": "172.21.96.1",
+      "LocalHostIp": "172.20.11.22",
       "Cameras": {
         "below-0": {
           "CaptureSettings": [
@@ -196,7 +196,7 @@
       "EnableTrace": false,
       "ControlIp": "172.17.0.1",
       "ControlPort": 139,
-      "LocalHostIp": "172.21.96.1",
+      "LocalHostIp": "172.20.11.22",
       "Cameras": {
         "front-center": {
           "CaptureSettings": [
@@ -405,7 +405,7 @@
       "EnableTrace": false,
       "ControlIp": "172.17.0.1",
       "ControlPort": 139,
-      "LocalHostIp": "172.21.96.1",
+      "LocalHostIp": "172.20.11.22",
       "Cameras": {
         "front-center": {
           "CaptureSettings": [
@@ -614,7 +614,7 @@
       "EnableTrace": false,
       "ControlIp": "172.17.0.1",
       "ControlPort": 139,
-      "LocalHostIp": "172.21.96.1",
+      "LocalHostIp": "172.20.11.22",
       "Cameras": {
         "front-center": {
           "CaptureSettings": [
@@ -823,7 +823,7 @@
       "EnableTrace": true,
       "ControlIp": "172.17.0.1",
       "ControlPort": 139,
-      "LocalHostIp": "172.21.96.1",
+      "LocalHostIp": "172.20.11.22",
       "Cameras": {
           "front-4": {
           "CaptureSettings": [

@@ -19,13 +19,15 @@ def takeOff(droneName):
 
     return client
 
-def singleDroneController(droneName, droneCount, current_target, status, TARGET_FOUND):
+def singleDroneController(droneName, current_target_dictionary, status_dictionary, target_found):
     """ Drone process that listens for movement commands and sends status updates. """
     #print(f"In single controller, Drone name: {droneName}")
+
+    
     
     # Initialize AirSim client and take off
     client = takeOff(droneName)
-    status = "READY"
+
 
     def move_drone_relative(drone_name, x, y, z, speed):
         state = client.getMultirotorState(vehicle_name=drone_name)
@@ -52,23 +54,42 @@ def singleDroneController(droneName, droneCount, current_target, status, TARGET_
         cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
 
 
-    while not TARGET_FOUND:
+    while not target_found.value:
+        current_target = current_target_dictionary[droneName]
 
         if current_target is not None:
-            waypoint_name, waypoint_location = current_target
-            print(f"Received command: Drone {droneName} is moving to {waypoint_name} at {waypoint_location}")
-            new = client.moveToPositionAsync(waypoint_location.x_val, waypoint_location.y_val, waypoint_location.z_val, 5, vehicle_name=droneName)
-            status = "MOVING"
-            while not new.is_done():
-                time.sleep(0.1)
+            waypoint_name = current_target.name
+            waypoint_x = current_target.x
+            waypoint_y = current_target.y
+            waypoint_z = current_target.z
+
+            print(f"Received command: Drone {droneName} is moving to {waypoint_name} at {waypoint_x}, {waypoint_y}, {waypoint_z}")
+            print(f"Current position: {client.getMultirotorState(vehicle_name=droneName).kinematics_estimated.position}")
+            move_future = client.moveToPositionAsync(waypoint_x, waypoint_y, waypoint_z, 5, vehicle_name=droneName)
+            status_dictionary[droneName] = "MOVING"
+
+            current_time = time.time()
+            while current_time + 10 > time.time(): # 15-second timeout
+                drone_state = client.getMultirotorState(vehicle_name=droneName)
+                position = drone_state.kinematics_estimated.position
+                current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
+
+
+                # Check if the drone is close enough to the target (within a small threshold)
+                distance = ((current_x - waypoint_x) ** 2 + (current_y - waypoint_y) ** 2 + (current_z - waypoint_z) ** 2) ** 0.5
+                if distance < 5.0:  # 5-meter tolerance
+                    break  # Exit loop when the drone reaches the target
+
+                time.sleep(1)
                 print("Drone is moving")
-            status = "SEARCHING"
+            status_dictionary[droneName] = "SEARCHING"
+            print(f"Drone {droneName} arrived and is searching {waypoint_name}")
+
         else:
             print(f"Drone {droneName} is waiting for commands.")
-            status = "WAITING"
+            status_dictionary[droneName] = "WAITING"
             time.sleep(1)
 
-        print("Drone {droneName} is ready to search at {current_target}")
         # if not command_queue.empty():
         #     command = command_queue.get()
         #     if command == "STOP":

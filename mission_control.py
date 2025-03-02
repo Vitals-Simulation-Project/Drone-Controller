@@ -19,7 +19,6 @@ from model_files.pull_model import load_model
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
-TARGET_FOUND = False # global variable to stop the search loop when the target is found
 
 
 
@@ -27,11 +26,13 @@ TARGET_FOUND = False # global variable to stop the search loop when the target i
 # Waypoint class to store the name, location, and priority of each waypoint
 # using a priority queue to prioritize waypoints
 # location is a list of x, y, z Unreal Engine coordinates
-# priority is 3 for user-assigned waypoints, 2 for dropped waypoints that must be revisited, and 1 for regular waypoints
+# priority is 1 for user-assigned waypoints, 2 for dropped waypoints that must be revisited, and 3 for regular waypoints
 class Waypoint:
-    def __init__(self, name, location, priority):
+    def __init__(self, name, x, y, z, priority):
         self.name = name
-        self.location = location
+        self.x = x
+        self.y = y
+        self.z = z
         self.priority = priority
 
     def __lt__(self, other):
@@ -99,47 +100,52 @@ message_history = [
 def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
     mp.set_start_method('spawn')  # Windows-specific start method
+    manager = mp.Manager() # manager to share data between processes
 
-    print("Loading VLM...")
-    load_model(MODEL)
+
+    #print("Loading VLM...")
+    #load_model(MODEL)
     
     
-    current_target_dictionary = {}  # Dictionary to store the current target waypoint of each drone
-    status_dictionary = {} # Dictionary to store status of each drone
+    current_target_dictionary = manager.dict()  # Dictionary to store the current target waypoint of each drone
+    status_dictionary = manager.dict() # Dictionary to store status of each drone
+    target_found = mp.Value('b', False) # global variable to stop the search loop when the target is found
     processes = []  # List to store process references for each drone
 
 
 
-    # poi1 is a small shack in front of the spawn area
+    # POI1 is a small shack in front of the spawn area
     waypoint_queue = []
-    heapq.heappush(waypoint_queue, Waypoint("POI1", [1000, 5000, 500], 10))
+    heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
 
     
 
 
 
     # Create and start processes
-    for x in range(drone_count):
+    for x in range(1):
         drone_name = str(x)
-        current_target_dictionary[drone_name] = None # would be a tuple containing waypoint name and (x, y, z) coordinates 
+        current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, drone_count, current_target_dictionary[drone_name], status_dictionary[drone_name], TARGET_FOUND))
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found))
         p.start()
         processes.append(p)
+        print(f"Drone {drone_name} is initializing")
 
 
-    # Wait for all drones to be ready
-    for drone in status_dictionary:
-        if status_dictionary[drone] == "READY":
-            print(f"Drone {drone} is ready.")
-        else:
-            time.sleep(0.1)
 
+
+   
+    while not all(status == "WAITING" for status in status_dictionary.values()):       
+        print("Waiting for all drones to take off...")
+        # for drone_name in status_dictionary:
+        #     print(f"Drone {drone_name} status: {status_dictionary[drone_name]}")
+        time.sleep(1)
 
 
 
     try:
-        while not TARGET_FOUND:
+        while not target_found.value:
             
 
             # first assign waypoints to any waiting drones
@@ -147,7 +153,8 @@ def parentController(drone_count):
                 if status_dictionary[drone_name] == "WAITING":
                     if len(waypoint_queue) > 0:
                         next_waypoint = heapq.heappop(waypoint_queue)
-                        current_target_dictionary[drone_name] = (next_waypoint.name, next_waypoint.location)
+                        current_target_dictionary[drone_name] = next_waypoint
+                        print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
                     else:
                         print(f"No waypoints available for Drone {drone_name}")
 
