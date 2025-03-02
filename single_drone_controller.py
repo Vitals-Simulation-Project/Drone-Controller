@@ -118,6 +118,7 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
             current_target_dictionary[droneName] = None
             print(f"Drone {droneName} finished searching {waypoint_name}")
             searched_areas[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
+            status_dictionary[droneName] = "WAITING"
 
 
         else:

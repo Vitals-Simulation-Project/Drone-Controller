@@ -117,12 +117,14 @@ def parentController(drone_count):
     waypoint_queue = []
     # heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
     heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
 
-
-
-
+    
     # Create and start processes
-    for x in range(1):
+    for x in range(5):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
