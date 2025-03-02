@@ -35,7 +35,7 @@ def move_drone_relative(drone_name, x, y, z, speed):
 
 
 # Connect to the AirSim simulator
-droneName = "3"
+droneName = "0"
 client = airsim.MultirotorClient()
 client.confirmConnection()
 client.enableApiControl(True, droneName)

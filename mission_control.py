@@ -96,7 +96,6 @@ message_history = [
 
 
 
-
 def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
     mp.set_start_method('spawn')  # Windows-specific start method
@@ -116,9 +115,9 @@ def parentController(drone_count):
 
     # POI1 is a small shack in front of the spawn area
     waypoint_queue = []
-    heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
+    # heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
 
-    
 
 
 
@@ -140,7 +139,7 @@ def parentController(drone_count):
         print("Waiting for all drones to take off...")
         # for drone_name in status_dictionary:
         #     print(f"Drone {drone_name} status: {status_dictionary[drone_name]}")
-        time.sleep(1)
+        time.sleep(5)
 
 
 
@@ -156,7 +155,8 @@ def parentController(drone_count):
                         current_target_dictionary[drone_name] = next_waypoint
                         print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
                     else:
-                        print(f"No waypoints available for Drone {drone_name}")
+                        #print(f"No waypoints available for Drone {drone_name}")
+                        pass
 
 
 
