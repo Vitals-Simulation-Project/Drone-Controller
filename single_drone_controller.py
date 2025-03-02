@@ -95,7 +95,7 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
             status_dictionary[droneName] = "MOVING"
 
             current_time = time.time()
-            while True: # 15-second timeout
+            while True:
                 drone_state = client.getMultirotorState(vehicle_name=droneName)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val

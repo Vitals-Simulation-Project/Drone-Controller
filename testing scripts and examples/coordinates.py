@@ -45,6 +45,7 @@ client.armDisarm(True, vehicle_name=drone)
 
 client.takeoffAsync(vehicle_name=drone).join()
 state = client.getMultirotorState(vehicle_name=drone)
+client.rotateToYawAsync(-30, 5, vehicle_name=drone).join()
 print(state)
 time.sleep(60)
 # client.moveToPositionAsync(20, -10, -50, 10, vehicle_name=drone).join()
