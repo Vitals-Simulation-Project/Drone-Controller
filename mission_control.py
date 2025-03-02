@@ -110,7 +110,7 @@ def parentController(drone_count):
     status_dictionary = manager.dict() # Dictionary to store status of each drone
     target_found = mp.Value('b', False) # global variable to stop the search loop when the target is found
     processes = []  # List to store process references for each drone
-
+    searched_areas = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
 
 
     # POI1 is a small shack in front of the spawn area
@@ -126,7 +126,7 @@ def parentController(drone_count):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found))
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas))
         p.start()
         processes.append(p)
         print(f"Drone {drone_name} is initializing")
@@ -155,11 +155,13 @@ def parentController(drone_count):
                         current_target_dictionary[drone_name] = next_waypoint
                         print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
                     else:
-                        #print(f"No waypoints available for Drone {drone_name}")
-                        pass
+                        print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                        
+                        # get new waypoints from VLM model
+                        
 
 
-
+            
 
             time.sleep(1)  # Give some time between cycles
     

@@ -44,7 +44,7 @@ def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
 
 
 
-def singleDroneController(droneName, current_target_dictionary, status_dictionary, target_found):
+def singleDroneController(droneName, current_target_dictionary, status_dictionary, target_found, searched_areas):
     """ Drone process that listens for movement commands and sends status updates. """
     #print(f"In single controller, Drone name: {droneName}")
 
@@ -61,10 +61,7 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
         client.moveToPositionAsync(new_position.x_val, new_position.y_val, new_position.z_val, speed, vehicle_name=drone_name).join()
         return new_position
 
-    def move_drone_absolute(drone_name, x, y, z, speed):
-        new_position = airsim.Vector3r(x, y, z)
-        client.moveToPositionAsync(new_position.x_val, new_position.y_val, new_position.z_val, speed, vehicle_name=drone_name).join()
-        return new_position
+
     
     def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
@@ -119,6 +116,8 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
             time.sleep(60)
 
             current_target_dictionary[droneName] = None
+            print(f"Drone {droneName} finished searching {waypoint_name}")
+            searched_areas[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
 
 
         else:
