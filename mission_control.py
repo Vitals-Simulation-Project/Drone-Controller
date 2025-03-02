@@ -161,7 +161,7 @@ def parentController(drone_count):
                         
 
 
-            
+            # use the searched_areas dictionary to ask the VLM model for new waypoints
 
             time.sleep(1)  # Give some time between cycles
     
