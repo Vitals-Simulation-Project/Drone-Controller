@@ -8,15 +8,19 @@ import cv2
 import local_config
 import geopy.distance # type: ignore
 
+
+MIN_ALTITUDE = 10
+VELOCITY = 15
+
 # Enables api control, takes off drone, returns the client
-def takeOff(droneName):
+def takeOff(drone_name):
     client = airsim.MultirotorClient(local_config.LOCAL_IP)
     client.confirmConnection()
-    client.enableApiControl(True, droneName)
-    client.armDisarm(True, droneName)
-    client.takeoffAsync(vehicle_name=droneName).join()
+    client.enableApiControl(True, drone_name)
+    client.armDisarm(True, drone_name)
+    client.takeoffAsync(vehicle_name=drone_name).join()
 
-    # print("Drone " + droneName + " is ready to fly")
+    # print("Drone " + drone_name + " is ready to fly")
 
     return client
 
@@ -44,14 +48,14 @@ def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
 
 
 
-def singleDroneController(droneName, current_target_dictionary, status_dictionary, target_found, searched_areas):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas):
     """ Drone process that listens for movement commands and sends status updates. """
-    #print(f"In single controller, Drone name: {droneName}")
+    #print(f"In single controller, Drone name: {drone_name}")
 
     
     
     # Initialize AirSim client and take off
-    client = takeOff(droneName)
+    client = takeOff(drone_name)
 
 
     def move_drone_relative(drone_name, x, y, z, speed):
@@ -91,7 +95,7 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
 
 
     while not target_found.value:
-        current_target = current_target_dictionary[droneName]
+        current_target = current_target_dictionary[drone_name]
 
         if current_target is not None:
             waypoint_name = current_target.name
@@ -103,42 +107,48 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
             print("Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
             print("Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
 
-            # print(f"Received command: Drone {droneName} is moving to {waypoint_name} at {waypoint_x}, {waypoint_y}, {waypoint_z}")
-            # print(f"Current position: {client.getMultirotorState(vehicle_name=droneName).kinematics_estimated.position}")
-            #move_future = client.moveToPositionAsync(waypoint_x, waypoint_y, waypoint_z, 5, vehicle_name=droneName)
-            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, 15, vehicle_name=droneName)
-            status_dictionary[droneName] = "MOVING"
+            # print(f"Received command: Drone {drone_name} is moving to {waypoint_name} at {waypoint_x}, {waypoint_y}, {waypoint_z}")
+            # print(f"Current position: {client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position}")
+            #move_future = client.moveToPositionAsync(waypoint_x, waypoint_y, waypoint_z, 5, vehicle_name=drone_name)
+            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, VELOCITY, vehicle_name=drone_name)
+            status_dictionary[drone_name] = "MOVING"
 
             while True:
-                drone_state = client.getMultirotorState(vehicle_name=droneName)
+                drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
 
 
+                if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE):
+                    gpsData = drone_state.gps_location
+                    client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+10, VELOCITY / 3).join()
+                    #print("moving up")
+                    client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, VELOCITY, vehicle_name=drone_name)
+                    #print("continuing to target")
+
                 # Check if the drone gps is close enough to the target (within a small threshold)
-                # distance = geopy.distance.distance((current_x, current_y), (waypoint_lat, waypoint_lon)).m
                 distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2 + (current_z - waypoint_z)**2)**0.5
-                print("Distance to target: ", distance)
+                #print("Distance to target: ", distance)
                 if distance < 5.0:  # 5-meter tolerance
                     move_future.join()
-                    print(f"Drone {droneName} reached the target")
+                    print(f"Drone {drone_name} reached the target")
                     break  
 
                 time.sleep(1)
-            status_dictionary[droneName] = "SEARCHING"
-            print(f"Drone {droneName} arrived and is searching {waypoint_name}")
+            status_dictionary[drone_name] = "SEARCHING"
+            print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
 
             time.sleep(60)
 
-            current_target_dictionary[droneName] = None
-            print(f"Drone {droneName} finished searching {waypoint_name}")
+            current_target_dictionary[drone_name] = None
+            print(f"Drone {drone_name} finished searching {waypoint_name}")
             searched_areas[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
-            status_dictionary[droneName] = "WAITING"
+            status_dictionary[drone_name] = "WAITING"
 
 
         else:
-            print(f"Drone {droneName} is waiting for commands.")
-            status_dictionary[droneName] = "WAITING"
+            print(f"Drone {drone_name} is waiting for commands.")
+            status_dictionary[drone_name] = "WAITING"
             time.sleep(5)
 
 

@@ -116,7 +116,7 @@ def parentController(drone_count):
     # POI1 is a small shack in front of the spawn area
     waypoint_queue = []
     # heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -15, 3))
 
     
     # Create and start processes
