@@ -1,31 +1,36 @@
-import airsim # type: ignore
-# import Constants.configDrones as configDrones
-# import ImageProcessing.getInfo as getInfo
+import airsim  # type: ignore
 import time
 import math
+import geopy.distance # type: ignore
 
 
-def unreal_to_gps(unreal_x, unreal_y, unreal_z, home_gps):
-    earth_radius = 6378137.0  # Earth's radius in meters
+# Convert Unreal Engine coordinates to GPS
+def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
+    """
+    Converts Unreal Engine (UE) coordinates to GPS coordinates.
+    """
+    home_lat, home_lon, home_alt = home_gps.latitude, home_gps.longitude, home_gps.altitude
 
-    # Extract home latitude, longitude, altitude
-    lat_home = math.radians(home_gps.latitude)
-    lon_home = math.radians(home_gps.longitude)
-    alt_home = home_gps.altitude
+    # Convert UE X and Y to GPS using geopy
+    new_lat_lon = geopy.distance.distance(meters=ue_x).destination((home_lat, home_lon), bearing=0)  # North-South
+    # Use the resulting tuple and then apply the Y conversion (East-West)
+    new_lat_lon = geopy.distance.distance(meters=ue_y).destination(new_lat_lon, bearing=90)  # East-West
 
-    # Convert Unreal coordinates (ENU system)
-    d_lat = (unreal_y / earth_radius) * (180 / math.pi)
-    d_lon = (unreal_x / (earth_radius * math.cos(lat_home))) * (180 / math.pi)
-    d_alt = -unreal_z  # Unreal's Z is negative for altitude
+    new_lat = new_lat_lon[0]  # Extract latitude
+    new_lon = new_lat_lon[1]  # Extract longitude
 
-    # New GPS coordinates
-    new_lat = home_gps.latitude + d_lat
-    new_lon = home_gps.longitude + d_lon
-    new_alt = alt_home + d_alt
+    # Convert UE Z to GPS Altitude (UE Z is negative when going up)
+    new_alt = home_alt - ue_z  
 
     return new_lat, new_lon, new_alt
 
 
+def move_drone_relative(drone_name, x, y, z, speed):
+    state = client.getMultirotorState(vehicle_name=drone_name)
+    current_position = state.kinematics_estimated.position
+    new_position = airsim.Vector3r(current_position.x_val + x, current_position.y_val + y, current_position.z_val + z)    
+    client.moveToPositionAsync(new_position.x_val, new_position.y_val, new_position.z_val, speed, vehicle_name=drone_name).join()
+    return new_position
 
 
 
@@ -37,36 +42,36 @@ client.enableApiControl(True, droneName)
 client.armDisarm(True, droneName)
 client.takeoffAsync(vehicle_name=droneName).join()
 
-client.moveToZAsync(z=-20, velocity=8, vehicle_name = droneName).join()
+# Move up to 20 meters altitude
+client.moveToZAsync(z=-20, velocity=8, vehicle_name=droneName).join()
 
-
+# Get home GPS coordinates
 gps_home = client.getHomeGeoPoint()
-print("Initial coordinates: ", gps_home)
+print("Initial GPS Coordinates: ", gps_home)
+
+# Get initial Unreal Engine coordinates
 state = client.getMultirotorState(vehicle_name=droneName)
 current_position = state.kinematics_estimated.position
-print(f"Initial position: {current_position.x_val}, {current_position.y_val}, {current_position.z_val}")
+print(f"Initial UE Position: {current_position.x_val}, {current_position.y_val}, {current_position.z_val}")
 
+# Move to the right (X-axis) by 10 meters
+new_position = move_drone_relative(droneName, 10, 0, 0, 5)
 
-# move to the right 10 meters
-client.moveToPositionAsync(10, 0, -20, 5, vehicle_name=droneName).join()
+time.sleep(5)  # Allow some time for movement
 
-
-time.sleep(5)
-
-
+# Get final Unreal Engine coordinates
 state = client.getMultirotorState(vehicle_name=droneName)
 current_position = state.kinematics_estimated.position
-print(f"Final position: {current_position.x_val}, {current_position.y_val}, {current_position.z_val}")
+print(f"Final UE Position: {current_position.x_val}, {current_position.y_val}, {current_position.z_val}")
+
+
+
 
 
 unreal_coords = (current_position.x_val, current_position.y_val, current_position.z_val)
 gps_coords = unreal_to_gps(*unreal_coords, gps_home)
-# add to home coordinates
-print("Converted GPS:", gps_coords)
+print("Converted GPS Coordinates:", gps_coords)
 
-
-print("Actual GPS:", client.getMultirotorState(vehicle_name=droneName).gps_location)
-
-
-
-
+# Actual GPS from AirSim
+actual_gps = client.getMultirotorState(vehicle_name=droneName).gps_location
+print("Actual GPS Coordinates from AirSim:", actual_gps)

@@ -4,7 +4,28 @@ import numpy as np
 import cv2
 import pprint
 import time
+import geopy.distance # type: ignore
 
+
+# Convert Unreal Engine coordinates to GPS
+def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
+    """
+    Converts Unreal Engine (UE) coordinates to GPS coordinates.
+    """
+    home_lat, home_lon, home_alt = home_gps.latitude, home_gps.longitude, home_gps.altitude
+
+    # Convert UE X and Y to GPS using geopy
+    new_lat_lon = geopy.distance.distance(meters=ue_x).destination((home_lat, home_lon), bearing=0)  # North-South
+    # Use the resulting tuple and then apply the Y conversion (East-West)
+    new_lat_lon = geopy.distance.distance(meters=ue_y).destination(new_lat_lon, bearing=90)  # East-West
+
+    new_lat = new_lat_lon[0]  # Extract latitude
+    new_lon = new_lat_lon[1]  # Extract longitude
+
+    # Convert UE Z to GPS Altitude (UE Z is negative when going up)
+    new_alt = home_alt - ue_z  
+
+    return new_lat, new_lon, new_alt
 
 
 def take_forward_picture(drone_name, image_type):
@@ -46,8 +67,12 @@ client.armDisarm(True, vehicle_name=drone)
 # Async methods returns Future. Call join() to wait for task to complete.
 client.takeoffAsync(vehicle_name=drone).join()
 client.rotateToYawAsync(-30, 5, vehicle_name=drone).join()
-move_drone_relative(drone, 120, 0, -30, 15)
-move_drone_relative(drone, 0, -55, 6, 5)
+# move_drone_relative(drone, 120, 0, -30, 15)
+# move_drone_relative(drone, 0, -55, 6, 5)
+
+# move up 50 meters
+client.moveToZAsync(z=-50, velocity=8, vehicle_name=drone).join()
+client.moveToPositionAsync(120.5, -54, -30, 10, vehicle_name=drone).join()
 
 # hover
 client.hoverAsync(vehicle_name=drone).join()
@@ -55,7 +80,19 @@ client.hoverAsync(vehicle_name=drone).join()
 
 
 # wait 1 sec
-time.sleep(3)
+time.sleep(5)
+# print current coordinates
+state = client.getMultirotorState(vehicle_name=drone)
+current_position = state.kinematics_estimated.position
+print(f"Current position: {current_position.x_val}, {current_position.y_val}, {current_position.z_val}")
+# print gps coordinates
+print(f"GPS coordinates: {state.gps_location.latitude}, {state.gps_location.longitude}, {state.gps_location.altitude}")
+
+
+# calculate converted GPS coordinates
+unreal_coords = (current_position.x_val, current_position.y_val, current_position.z_val)
+gps_coords = unreal_to_gps(*unreal_coords, client.getHomeGeoPoint())
+print("Converted GPS Coordinates:", gps_coords)
 
 take_forward_picture(drone, airsim.ImageType.Scene)
 take_forward_picture(drone, airsim.ImageType.Infrared)

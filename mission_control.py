@@ -2,13 +2,14 @@ import airsim  # type: ignore
 import multiprocessing as mp
 import random
 import time
+import heapq
 import os
 import numpy as np
 import cv2
 import requests
 import json
 from ollama import chat # type: ignore
-from pydantic import BaseModel
+from pydantic import BaseModel # type: ignore
 
 # project imports
 import local_config
@@ -16,35 +17,38 @@ import single_drone_controller as sdc
 from model_files.pull_model import load_model
 
 
-# poi1 is a small shack in front of the spawn area
-POINTS_OF_INTEREST = [
-    {"name": "POI1", "location": [0.0020828851586628867, -5.421523784302704e-05, 49.92039108276367]},
-]
-
-
-
-# offsets to move drones to the POIs in a circle pattern
-WAYPOINT_OFFSETS = [
-    (0, 5, 0),
-    (0, -5, 0),
-    (5, 0, 0),
-    (-5, 0, 0),
-    (0, 0, 0),
-]
-
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 
 
 
-# TO BE USED AS INPUT FOR THE MODEL
-# class Message(BaseModel):
-#     swarm_coordinates: tuple # coordinates of drone 0 to be used as the rough location of the swarm
-#     poi_coordinates: list[tuple]
-#     searched_areas: dict
+
+# Waypoint class to store the name, location, and priority of each waypoint
+# using a priority queue to prioritize waypoints
+# location is a list of x, y, z Unreal Engine coordinates
+# priority is 1 for user-assigned waypoints, 2 for dropped waypoints that must be revisited, and 3 for regular waypoints
+class Waypoint:
+    def __init__(self, name, x, y, z, priority):
+        self.name = name
+        self.x = x
+        self.y = y
+        self.z = z
+        self.priority = priority
+
+    def __lt__(self, other):
+        return self.priority > other.priority 
+    
+
+
+
+
+
+
+
+
 
 class VLMOutput(BaseModel):
-    waypoints: list[str]
+    waypoints: list[int] # id of the waypoint
     drone_id: int
     image_result: str # can be "heat signature detected", "no heat signature detected", "target confirmed", "target not confirmed"
     target_location: tuple # location of the target
@@ -84,104 +88,95 @@ message_history = [
 
 
 
-# make a global queue for images to process
+# global queue for images to process
 
 
 
 
-# send one message to load model
-response = chat(
-    'llama3.2',
-    messages=[
-    {'role': 'user', 'content': "hello"},
-    ],
-    stream=False,
-    format = VLMOutput.model_json_schema()
-)
 
 
 
 def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
     mp.set_start_method('spawn')  # Windows-specific start method
+    manager = mp.Manager() # manager to share data between processes
 
-    # send one message to load model
-    response = chat(
-        'llama3.2',
-        messages=[
-        {'role': 'user', 'content': "hello"},
-        ],
-        stream=False,
-    )
-    print(response.message.content)
 
-    input("Press enter to continue")
+    #print("Loading VLM...")
+    #load_model(MODEL)
     
-    command_queues = {}  # Dictionary to store queues for sending commands
-    status_queue = mp.Queue()  # Single queue for receiving updates
-    processes = []  # List to store process references
-    searched_areas = {} # Dictionary containing areas that have already been searched
+    
+    current_target_dictionary = manager.dict()  # Dictionary to store the current target waypoint of each drone
+    status_dictionary = manager.dict() # Dictionary to store status of each drone
+    target_found = mp.Value('b', False) # global variable to stop the search loop when the target is found
+    processes = []  # List to store process references for each drone
+    searched_areas = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
 
 
+    # POI1 is a small shack in front of the spawn area
+    waypoint_queue = []
+    # heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -15, 3))
+
+    
     # Create and start processes
-    for x in range(drone_count):
+    for x in range(1):
         drone_name = str(x)
-        command_queues[drone_name] = mp.Queue()
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, drone_count, command_queues[drone_name], status_queue))
+        current_target_dictionary[drone_name] = None # an instance of the waypoint class
+        status_dictionary[drone_name] = "INITIALIZING"
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas))
         p.start()
         processes.append(p)
+        print(f"Drone {drone_name} is initializing")
 
 
-    # Wait for all drones to be ready
-    while status_queue.qsize() < drone_count:
-        print("Waiting for drones to be ready...")
+
+
+   
+    while not all(status == "WAITING" for status in status_dictionary.values()):       
+        print("Waiting for all drones to take off...")
+        # for drone_name in status_dictionary:
+        #     print(f"Drone {drone_name} status: {status_dictionary[drone_name]}")
         time.sleep(5)
-    
-    # pop all messages from the queue and print drone status
-    while not status_queue.empty():
-        drone_name, status = status_queue.get()
-        print(f"Drone {drone_name}: {status}")
 
 
 
     try:
-        while True:
-            # Receive status updates from drones
-            while not status_queue.empty():
-                drone_name, status = status_queue.get()
-                print(f"Update from Drone {drone_name}: {status}")
+        while not target_found.value:
+            
 
-            user_input = input("Enter 'rand' for random movement or 'STOP' to quit: ")
+            # first assign waypoints to any waiting drones
+            for drone_name in status_dictionary:
+                if status_dictionary[drone_name] == "WAITING":
+                    if len(waypoint_queue) > 0:
+                        next_waypoint = heapq.heappop(waypoint_queue)
+                        current_target_dictionary[drone_name] = next_waypoint
+                        print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
+                    else:
+                        print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                        time.sleep(10)
+                        
+                        # get new waypoints from VLM model
+                        
 
-            if user_input == "STOP":
-                for q in command_queues.values():
-                    q.put("STOP")  # Stop all drones
-                break
 
-            elif user_input == "rand":
-                for drone_name, q in command_queues.items():
-                    x = random.uniform(-50, 50)
-                    y = random.uniform(-50, 50)
-                    z = random.uniform(-20, -5)  # Stay within flight limits
-                    q.put((x, y, z))  # Send position command to drone
-            else:
-                # Parse the input
-                try:
-                    x, y, z = map(float, user_input.split())
-                    for q in command_queues.values():
-                        q.put((x, y, z))
-                except ValueError:
-                    print("Invalid input. Type 'rand' for random movement or 'STOP' to exit.")
+            # use the searched_areas dictionary to ask the VLM model for new waypoints
 
-            time.sleep(1)  # Give some time for status updates
+            time.sleep(1)  # Give some time between cycles
     
     except KeyboardInterrupt:
-        for q in command_queues.values():
-            q.put("STOP")
+        for p in processes:
+            p.terminate()
 
     # Wait for all processes to finish
     for p in processes:
         p.join()
+
+
+
+
+
+
 
 if __name__ == '__main__':
 
