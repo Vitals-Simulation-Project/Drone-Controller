@@ -117,14 +117,10 @@ def parentController(drone_count):
     waypoint_queue = []
     # heapq.heappush(waypoint_queue, Waypoint("POI1", 1000, 5000, 500, 3))
     heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
 
     
     # Create and start processes
-    for x in range(5):
+    for x in range(1):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
@@ -158,6 +154,7 @@ def parentController(drone_count):
                         print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
                     else:
                         print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                        time.sleep(10)
                         
                         # get new waypoints from VLM model
                         

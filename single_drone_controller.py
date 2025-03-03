@@ -60,6 +60,20 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
         new_position = airsim.Vector3r(current_position.x_val + x, current_position.y_val + y, current_position.z_val + z)    
         client.moveToPositionAsync(new_position.x_val, new_position.y_val, new_position.z_val, speed, vehicle_name=drone_name).join()
         return new_position
+    
+
+
+    def move_drone_gps_avoid_collision(drone_name, latitude, longitude, altitude, velocity):
+        client.moveToGPSAsync(latitude, longitude, altitude, velocity, vehicle_name=drone_name)
+        t_end = time.time() + 30
+        while (time.time()<t_end):
+        ##print("im in here")
+            if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance<5 or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance<5):
+                gpsData = client.getGpsData(vehicle_name=drone_name).gnss.geo_point
+            
+                client.moveToGPSAsync(gpsData.latitude,gpsData.latitude,gpsData.altitude+10,3).join()
+                client.moveToGPSAsync(latitude, longitude, altitude, velocity, vehicle_name=drone_name)
+                print("moving up")
 
 
     
@@ -87,6 +101,7 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
             waypoint_z = current_target.z
 
             print("Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
+            print("Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
 
             # print(f"Received command: Drone {droneName} is moving to {waypoint_name} at {waypoint_x}, {waypoint_y}, {waypoint_z}")
             # print(f"Current position: {client.getMultirotorState(vehicle_name=droneName).kinematics_estimated.position}")
@@ -94,22 +109,22 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, 15, vehicle_name=droneName)
             status_dictionary[droneName] = "MOVING"
 
-            current_time = time.time()
             while True:
                 drone_state = client.getMultirotorState(vehicle_name=droneName)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
 
 
-                # Check if the drone is close enough to the target (within a small threshold)
-                distance = ((current_x - waypoint_x) ** 2 + (current_y - waypoint_y) ** 2 + (current_z - waypoint_z) ** 2) ** 0.5
-                if distance < 1.0:  # 1-meter tolerance
+                # Check if the drone gps is close enough to the target (within a small threshold)
+                # distance = geopy.distance.distance((current_x, current_y), (waypoint_lat, waypoint_lon)).m
+                distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2 + (current_z - waypoint_z)**2)**0.5
+                print("Distance to target: ", distance)
+                if distance < 5.0:  # 5-meter tolerance
                     move_future.join()
                     print(f"Drone {droneName} reached the target")
                     break  
 
                 time.sleep(1)
-                print("Drone is moving")
             status_dictionary[droneName] = "SEARCHING"
             print(f"Drone {droneName} arrived and is searching {waypoint_name}")
 
@@ -130,4 +145,5 @@ def singleDroneController(droneName, current_target_dictionary, status_dictionar
 
 
 if __name__ == "__main__":
-    print("This script is not meant to be run directly.")
+    print("This script is not meant to be run directly. Please run mission_control.py instead.")
+    exit(1)
