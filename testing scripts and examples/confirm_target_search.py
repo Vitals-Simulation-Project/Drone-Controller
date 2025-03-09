@@ -14,11 +14,10 @@ client.enableApiControl(True)
 client.armDisarm(True)
 client.takeoffAsync().join()
 
-altitude = -30      # Fixed altitude (negative for AirSim)
-side_length = 30    # Square size
-speed = 20          # Speed (m/s)
-running = True      # Search loop
-drone = "1"         # Drone
+confirm_target_altitude = -10      # Fixed altitude (negative for AirSim)
+confirm_target_side_length = 10    # Square size
+confirm_target_speed = 8           # Speed (m/s)
+drone = "1"                        # Drone
 
 imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 
@@ -37,7 +36,7 @@ def take_forward_picture(drone_name, image_type):
 
     cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
 
-def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
+def confirm_target_search(client, center_x, center_y, side_length, altitude, speed):
     global running
 
     half_side = side_length / 2  
@@ -50,35 +49,30 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
         (center_x - half_side, center_y + half_side),  # Top-left
     ]
 
-    while running:
-        for x, y in square_corners:
-            if not running:
-                break
+    for x, y in square_corners: 
+        client.moveToPositionAsync(
+            x, y, altitude, speed,
+            drivetrain=airsim.DrivetrainType.ForwardOnly,
+            yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
+        ).join()
 
-            # Move to the next corner
-            client.moveToPositionAsync(
-                x, y, altitude, speed,
-                drivetrain=airsim.DrivetrainType.ForwardOnly,
-                yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
-            ).join()
+        # Delay for stabilization
+        time.sleep(3)
 
-            # Delay for stabilization
-            time.sleep(3)
+        target_position = detect_brian() 
+        if target_position:
+            # Yaw, pitch, and roll
+            yaw_angle, pitch, roll = get_yaw_angle_to_target(client, target_position)
+            client.rotateToYawAsync(yaw_angle).join() 
+            client.moveByVelocityZAsync(0, 0, altitude, 1) 
 
-            target_position = detect_brian()
-            if target_position:
-                # Yaw, pitch, and roll
-                yaw_angle, pitch, roll = get_yaw_angle_to_target(client, target_position)
-                client.rotateToYawAsync(yaw_angle).join() 
-                client.moveByVelocityZAsync(0, 0, altitude, 1) 
-            
-            take_forward_picture(drone, airsim.ImageType.Infrared)
+        take_forward_picture(drone, airsim.ImageType.Scene)
 
-            # Stop key 
-            if keyboard.is_pressed('q'):
-                print("Stop key pressed. Exiting search.")
-                running = False
-                break
+        # Stop key 
+        if keyboard.is_pressed('q'):
+            print("Stop key pressed. Exiting search.")
+            running = False
+            break
 
 def detect_brian():
     response = client.simGetObjectPose("OrangeBall")  # Replace with Brian
@@ -108,7 +102,7 @@ try:
     
     if brian_position:
         center_x, center_y = brian_position.x_val, brian_position.y_val
-        waypoint_search(client, center_x, center_y, side_length, altitude, speed)
+        confirm_target_search(client, center_x, center_y, confirm_target_side_length, confirm_target_altitude, confirm_target_speed)
     else:
         print("Target not detected. Skipping search.")
 
