@@ -7,6 +7,7 @@ import numpy as np
 import cv2
 import local_config
 import geopy.distance # type: ignore
+from classes import Image
 
 
 MIN_ALTITUDE = 10
@@ -48,7 +49,7 @@ def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue):
     """ Drone process that listens for movement commands and sends status updates. """
     #print(f"In single controller, Drone name: {drone_name}")
 
@@ -137,6 +138,11 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 time.sleep(1)
             status_dictionary[drone_name] = "SEARCHING"
             print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
+
+            # Take a picture
+            take_forward_picture(drone_name, airsim.ImageType.Scene)
+            
+            image_queue.put((drone_name, waypoint_name, waypoint_lat, waypoint_lon, waypoint_alt))
 
             time.sleep(60)
 
