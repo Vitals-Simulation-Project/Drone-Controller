@@ -57,7 +57,6 @@ message_history = [
 
 
 
-# global queue for images to process
 
 
 
@@ -95,7 +94,7 @@ def parentController(drone_count):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue))
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue, waypoint_queue))
         p.start()
         processes.append(p)
         print(f"Drone {drone_name} is initializing")

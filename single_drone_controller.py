@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import local_config
 import base64
-
+import heapq
 
 from classes import Image
 from helper_functions import unreal_to_gps
@@ -34,7 +34,7 @@ def takeOff(drone_name):
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue, waypoint_queue):
     """ Drone process that listens for movement commands and sends status updates. """
     
     # Initialize AirSim client and take off
@@ -90,7 +90,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
     while not target_found.value:
-        current_target = current_target_dictionary[drone_name]
+        original_target = current_target = current_target_dictionary[drone_name]
 
         if current_target is not None:
             waypoint_name = current_target.name
@@ -99,16 +99,24 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             waypoint_y = current_target.y
             waypoint_z = current_target.z
 
+            print(f"Drone {drone_name} is moving to {waypoint_name}")
             print("Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
             print("Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
 
-            # print(f"Received command: Drone {drone_name} is moving to {waypoint_name} at {waypoint_x}, {waypoint_y}, {waypoint_z}")
-            # print(f"Current position: {client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position}")
-            #move_future = client.moveToPositionAsync(waypoint_x, waypoint_y, waypoint_z, 5, vehicle_name=drone_name)
+
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, VELOCITY, vehicle_name=drone_name)
             status_dictionary[drone_name] = "MOVING"
 
             while True:
+                if current_target_dictionary[drone_name] != original_target:
+                    print(f"Drone {drone_name} received a new target while moving to {waypoint_name}")
+                    # interrupt movement with hover
+                    client.hoverAsync().join()
+
+                    # push the original target back to the queue to be revisited later
+                    heapq.heappush(waypoint_queue, original_target)
+                    break
+
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
