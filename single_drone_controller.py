@@ -6,13 +6,15 @@ import os
 import numpy as np
 import cv2
 import local_config
-import geopy.distance # type: ignore
-from classes import Image
 import base64
 
 
+from classes import Image
+from helper_functions import unreal_to_gps
+
 MIN_ALTITUDE = 10
 VELOCITY = 15
+
 
 # Enables api control, takes off drone, returns the client
 def takeOff(drone_name):
@@ -28,33 +30,12 @@ def takeOff(drone_name):
 
 
 
-# Convert Unreal Engine coordinates to GPS
-def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
-    """
-    Converts Unreal Engine (UE) coordinates to GPS coordinates.
-    """
-    home_lat, home_lon, home_alt = home_gps.latitude, home_gps.longitude, home_gps.altitude
 
-    # Convert UE X and Y to GPS using geopy
-    new_lat_lon = geopy.distance.distance(meters=ue_x).destination((home_lat, home_lon), bearing=0)  # North-South
-    # Use the resulting tuple and then apply the Y conversion (East-West)
-    new_lat_lon = geopy.distance.distance(meters=ue_y).destination(new_lat_lon, bearing=90)  # East-West
-
-    new_lat = new_lat_lon[0]  # Extract latitude
-    new_lon = new_lat_lon[1]  # Extract longitude
-
-    # Convert UE Z to GPS Altitude (UE Z is negative when going up)
-    new_alt = home_alt - ue_z  
-
-    return new_lat, new_lon, new_alt
 
 
 
 def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue):
     """ Drone process that listens for movement commands and sends status updates. """
-    #print(f"In single controller, Drone name: {drone_name}")
-
-    
     
     # Initialize AirSim client and take off
     client = takeOff(drone_name)
@@ -153,9 +134,11 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
 
             # Take a picture
-            take_forward_picture(drone_name, airsim.ImageType.Scene)
+            base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
-            image_queue.put((drone_name, waypoint_name, waypoint_lat, waypoint_lon, waypoint_alt))
+            image_queue.put(Image(drone_name, airsim.ImageType.Scene, base64_picture))
+
+
 
             time.sleep(60)
 

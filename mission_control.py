@@ -10,20 +10,17 @@ import requests
 import json
 from ollama import chat # type: ignore
 from pydantic import BaseModel # type: ignore
+import base64
 
 # project imports
 import local_config
 import single_drone_controller as sdc
 from model_files.pull_model import load_model
 from classes import Waypoint, Image, VLMOutput
-
+from helper_functions import reconstruct_image_from_base64
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
-
-
-
-
 
     
 
@@ -138,7 +135,16 @@ def parentController(drone_count):
                 start_time = time.time()
 
             # check for images waiting to be processed
-            #       
+            if not image_queue.empty():
+                image = image_queue.get()
+                print(f"Received image from Drone {image.drone_id}")
+
+                # reconstruct the image from the base64 string
+                image_path = os.path.join(imgDir, f"image_{image.drone_id}.png")
+                reconstruct_image_from_base64(image.image, image_path)
+
+                # send the image to the VLM model for analysis
+
 
 
             # use the searched_areas dictionary to ask the VLM model for new waypoints
