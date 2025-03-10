@@ -8,6 +8,7 @@ import cv2
 import local_config
 import geopy.distance # type: ignore
 from classes import Image
+import base64
 
 
 MIN_ALTITUDE = 10
@@ -84,15 +85,27 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     
     def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
-        print(f"Taking picture from {camera_name}")
+        print(f"Taking picture from {camera_name}, type of {image_type}")
         response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
         
         filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
 
         img1d = np.frombuffer(response, dtype=np.uint8)
-        img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
 
-        cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+
+        if image_type == airsim.ImageType.Infrared:
+            img_gray = cv2.imdecode(img1d, cv2.IMREAD_GRAYSCALE)
+            cv2.imwrite(os.path.normpath(filename + '.png'), img_gray) # write to png on disk
+            _, buffer = cv2.imencode('.png', img_gray)  # Encode the image as PNG
+            base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
+        else:
+            img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png on disk
+            _, buffer = cv2.imencode('.png', img_rgb)  # Encode the image as PNG
+            base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
+
+    
+        return base64_image
 
 
     while not target_found.value:
@@ -141,7 +154,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             # Take a picture
             take_forward_picture(drone_name, airsim.ImageType.Scene)
-            
+
             image_queue.put((drone_name, waypoint_name, waypoint_lat, waypoint_lon, waypoint_alt))
 
             time.sleep(60)
