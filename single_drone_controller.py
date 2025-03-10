@@ -34,7 +34,7 @@ def takeOff(drone_name):
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue, waypoint_queue):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
     """ Drone process that listens for movement commands and sends status updates. """
     
     # Initialize AirSim client and take off
@@ -152,7 +152,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             current_target_dictionary[drone_name] = None
             print(f"Drone {drone_name} finished searching {waypoint_name}")
-            searched_areas[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
+            searched_areas_dictionary[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
             status_dictionary[drone_name] = "WAITING"
 
 

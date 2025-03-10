@@ -77,7 +77,7 @@ def parentController(drone_count):
     current_target_dictionary = manager.dict()  # Dictionary to store the current target waypoint of each drone
     status_dictionary = manager.dict() # Dictionary to store status of each drone
     target_found = mp.Value('b', False) # Global variable to stop the search loop when the target is found
-    searched_areas = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
+    searched_areas_dictionary = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
     image_queue = manager.Queue()  # Queue to store images waiting to be processed
 
     processes = []  # List to store process references for each drone
@@ -94,7 +94,7 @@ def parentController(drone_count):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas, image_queue, waypoint_queue))
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue))
         p.start()
         processes.append(p)
         print(f"Drone {drone_name} is initializing")
