@@ -29,7 +29,8 @@ if not os.path.exists(imgDir):
     os.makedirs(imgDir)
 
 def take_forward_picture(drone_name, image_type):
-    camera_name = "front-" + drone_name
+    #camera_name = "front-" + drone_name
+    camera_name = "front_center"
     print(f"Taking picture from {camera_name}")
     response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
     
@@ -65,7 +66,7 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
         time.sleep(3)
-        client.rotateToYawAsync(curyaw+135).join()
+        #client.rotateToYawAsync(curyaw+135).join()
         #take_forward_picture(drone, airsim.ImageType.Infrared)
         #take_forward_picture(drone, airsim.ImageType.Scene)  
         print("going into calc")
@@ -149,20 +150,20 @@ def MoveToGPSAsyncCollsion(self, latitude, longitude, altitude, velocity, timeou
 def calculateDistance_angle(infared):
     #client.hoverAsync()
     #print("im here 1")
-    responses = client.simGetImages([airsim.ImageRequest("front-"+ drone, airsim.ImageType.DepthPerspective, True, False),airsim.ImageRequest("front_center", airsim.ImageType.Infrared,False,False)])
+    responses = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False),airsim.ImageRequest("front_center", airsim.ImageType.Infrared,False,False)])
     #TEST_response= client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name='0') ## throws a fit if i do them both in one call
     depthPerspective = responses[0]
 
     ##depth = responses[0]
-    print("im here 2")
+    #print("im here 2")
     
     depth_img_in_meters = airsim.list_to_2d_float_array(depthPerspective.image_data_float, depthPerspective.width, depthPerspective.height) 
-    print("im here 3")
+    #print("im here 3")
     depth_img_in_meters = depth_img_in_meters.reshape(depthPerspective.height, depthPerspective.width, 1)
-    print("height")
-    print( depthPerspective.height)
-    print("width" )
-    print(depthPerspective.width)
+   # print("height")
+    #print( depthPerspective.height)
+    #print("width" )
+    #print(depthPerspective.width)
     depth_8bit_lerped = np.interp(depth_img_in_meters, (0, 100), (0, 255))
 
     ##print(responses[0].width) #256
@@ -173,7 +174,7 @@ def calculateDistance_angle(infared):
   
     ##img = responses[1]
     img = infared
-    print("im here 3")
+    #print("im here 3")
   
 
    
@@ -203,9 +204,13 @@ def calculateDistance_angle(infared):
     height= client.getDistanceSensorData(distance_sensor_name='Distance').distance
     ##print("im here 3")
 
+#     try:
+#     print(values[n])
+#   except IndexError:
+#     # Index Out of Bound 
+#     print("value doesnt exist")
     
-    
-    perpixel = 90/512 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
+    perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
     # try:
     horizontal = np.argwhere(mask)[5][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     # except:
@@ -213,11 +218,11 @@ def calculateDistance_angle(infared):
     #     exit
     
     
-    if(horizontal >= (512/2)): # was 256 before david :(
-        #print("right")
+    if(horizontal >= (256/2)): # was 256 before david :(
+        print("right")
         clockwise = True
-    elif(horizontal<(512/2)): # was 256 before david :(
-        #print("left")
+    elif(horizontal<(256/2)): # was 256 before david :(
+        print("left")
         clockwise = False   
     vert = np.argwhere(mask)[5][0]
     distance = depth_img_in_meters[vert][horizontal][0] ## could be back wards
@@ -266,8 +271,8 @@ def CordCalulcation(angle, distance,clockwise):
     state = client.getMultirotorState()
     q = state.kinematics_estimated.orientation
     roll , pitch, yaw = to_eularian_angles(q)
-    #print(yaw)
-    #print("yaw^^^")
+    print(yaw)
+    print("yaw^^^")
     if (clockwise == True):
         yaw = yaw + angle
     elif(clockwise == False):
@@ -277,24 +282,30 @@ def CordCalulcation(angle, distance,clockwise):
     print(yaw)
     currentposition = state.kinematics_estimated.position
     if(yaw >0  and yaw <= 90 ):
-       # print("quad 1")
+        print("quad 1")
         newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
         newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
     elif(yaw >90  and yaw <= 180):
-       # print("quad 2")
+        print("quad 2")
         newY= currentposition.y_val +math.sin(math.radians(angle)) * distance
         newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
     elif(yaw >-180  and yaw <= -90):
-        #print("quad 3")
+        print("quad 3")
         newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
         newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
     elif(yaw >-90  and yaw <= 0):
-        #print("quad 4")
+        print("quad 4")
         newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
         newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
-   
+    
+    currentposition = state.kinematics_estimated.position
+    print (currentposition)
+    print(newX,newY)
     print("we got all the way down here!!!!!")
-    return newX,newY, currentposition.z_val
+    confirm_target_search(client, newX, newY, confirm_target_side_length, confirm_target_altitude, confirm_target_speed)
+    
+    
+    #return newX,newY, currentposition.z_val
 
 try:
     #brian_position = detect_brian()
@@ -316,6 +327,10 @@ try:
     create_waypoint() 
     time.sleep(3)
     waypoint_search(client, 230, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # Change to the waypoint given
+    # state = client.getMultirotorState()
+    # currentposition = state.kinematics_estimated.position
+    # client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-15 ,10, vehicle_name= drone).join()
+    # client.moveToPositionAsync(99,-8.8 , currentposition.z_val-15 ,20, vehicle_name= drone).join() 
 
 finally:
     # Land the drone safely
