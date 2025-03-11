@@ -171,8 +171,11 @@ def calculateDistance_angle(infared):
     
     depth_img_in_meters = airsim.list_to_2d_float_array(depthPerspective.image_data_float, depthPerspective.width, depthPerspective.height) 
     print("im here 3")
-
     depth_img_in_meters = depth_img_in_meters.reshape(depthPerspective.height, depthPerspective.width, 1)
+    print("height")
+    print( depthPerspective.height)
+    print("width" )
+    print(depthPerspective.width)
     depth_8bit_lerped = np.interp(depth_img_in_meters, (0, 100), (0, 255))
 
     ##print(responses[0].width) #256
@@ -215,7 +218,7 @@ def calculateDistance_angle(infared):
 
     
     
-    perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle 
+    perpixel = 90/512 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
     # try:
     horizontal = np.argwhere(mask)[5][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     # except:
@@ -223,10 +226,10 @@ def calculateDistance_angle(infared):
     #     exit
     
     
-    if(horizontal >= (256/2)):
+    if(horizontal >= (512/2)): # was 256 before david :(
         #print("right")
         clockwise = True
-    elif(horizontal<(256/2)):
+    elif(horizontal<(512/2)): # was 256 before david :(
         #print("left")
         clockwise = False   
     vert = np.argwhere(mask)[5][0]
@@ -240,7 +243,8 @@ def calculateDistance_angle(infared):
     horizontalangle = perpixel * horizontal
     #time.sleep(30)
     print(horizontalangle , calculations , clockwise)
-    return horizontalangle , calculations , clockwise
+    CordCalulcation(horizontalangle, calculations , clockwise)
+    ##return horizontalangle , calculations , clockwise
     ##return "test"
 
 def to_eularian_angles(q):
@@ -302,7 +306,7 @@ def CordCalulcation(angle, distance,clockwise):
         newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
         newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
    
-    
+    print("we got all the way down here!!!!!")
     return newX,newY, currentposition.z_val
 
 
