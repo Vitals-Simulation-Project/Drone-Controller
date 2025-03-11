@@ -2,9 +2,13 @@ import asyncio
 import websockets
 import json
 
+URI = "ws://localhost:8765"
+
 async def test_client():
-    uri = "ws://localhost:8765"
-    async with websockets.connect(uri) as websocket:
+    '''Test connection by sending messages to server'''
+    
+    async with websockets.connect(URI) as websocket:
+
         AddWaypointMessage = {
             "MessageType": "AddWaypoint",
             "X": 3000,
@@ -41,18 +45,18 @@ async def test_client():
             "WaypointID": 3
         }
 
-        sleep_time = 2
-        await asyncio.sleep(sleep_time)
+        TIME_BETWEEN_MESSAGES = 2
+        await asyncio.sleep(TIME_BETWEEN_MESSAGES)
         await websocket.send(json.dumps(AddWaypointMessage))
-        await asyncio.sleep(sleep_time)
+        await asyncio.sleep(TIME_BETWEEN_MESSAGES)
         await websocket.send(json.dumps(DeleteWaypointMessage))
-        await asyncio.sleep(sleep_time)
+        await asyncio.sleep(TIME_BETWEEN_MESSAGES)
         await websocket.send(json.dumps(UpdateStateMessage))
-        await asyncio.sleep(sleep_time)
+        await asyncio.sleep(TIME_BETWEEN_MESSAGES)
         await websocket.send(json.dumps(UpdateTargetMessage))
-        await asyncio.sleep(sleep_time)
+        await asyncio.sleep(TIME_BETWEEN_MESSAGES)
         await websocket.send(json.dumps(UpdateStateMessage2))
-        await asyncio.sleep(sleep_time)
+        await asyncio.sleep(TIME_BETWEEN_MESSAGES)
         await websocket.send(json.dumps(UpdateTargetMessage2))
 
 asyncio.run(test_client())
