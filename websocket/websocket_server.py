@@ -4,26 +4,36 @@ import websockets
 HOST = "localhost"
 PORT_NUMBER = 8765
 
-connected_clients = []
+CLIENTS = set()
+
+
+async def send(client, message):
+    '''Send a message to the client asynchronously'''
+
+    await client.send(message)
+
 
 async def handler(websocket):
     '''Handles client connection to websocket server'''
 
     # Add new connected client to list
-    connected_clients.append(id(websocket))
+    CLIENTS.add(websocket)
     print(f"Client {id(websocket)} connected.")
 
     try:
         # For every message sent to server, send the message to all other clients, excluding sender
         async for message in websocket:
-            for client in connected_clients:
+            for client in CLIENTS:
                 if client != websocket:
-                    await client.send(message)
+                    # Create a task to concurrently send messages to clients
+                    asyncio.create_task(send(client, message))
 
-    except websockets.exceptions.ConnectionClosed:
+    except websockets.ConnectionClosed:
         print(f"Client {id(websocket)} disconnected.")
+
     finally:
-        connected_clients.remove(id(websocket))
+        CLIENTS.remove(websocket)
+
 
 async def start_websocket_server():
     '''Starts the websocket server on \"ws://localhost:8765\"'''
@@ -31,6 +41,7 @@ async def start_websocket_server():
     server = await websockets.serve(handler, HOST, PORT_NUMBER)
     print(f"Server started on ws://{HOST}:{PORT_NUMBER}")
     await server.wait_closed()
+
 
 def start():
     '''Starts the websocket server in an asyncio event loop'''
