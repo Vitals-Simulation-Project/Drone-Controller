@@ -34,8 +34,6 @@ def take_forward_picture(drone_name, image_type):
     print(f"Taking picture from {camera_name}")
     response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
     
-    
-    
     filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
 
     img1d = np.frombuffer(response, dtype=np.uint8)
@@ -44,7 +42,7 @@ def take_forward_picture(drone_name, image_type):
     cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
     return response
 
-def waypoint_search(client, center_x, center_y, side_length, waypoint_altitude, waypoint_speed):
+def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
     global running
 
     half_side = side_length / 2  
@@ -52,8 +50,8 @@ def waypoint_search(client, center_x, center_y, side_length, waypoint_altitude, 
     q = state.kinematics_estimated.orientation
     roll , pitch, yaw = to_eularian_angles(q)
     curyaw=yaw
+
     # Waypoints for target to be centered
-    
     square_corners = [
         (center_x - half_side, center_y - half_side),  # Bottom-left
         (center_x + half_side, center_y - half_side),  # Bottom-right
@@ -63,18 +61,17 @@ def waypoint_search(client, center_x, center_y, side_length, waypoint_altitude, 
 
     for x, y in square_corners: 
         client.moveToPositionAsync(
-            x, y, waypoint_altitude, waypoint_speed,
+            x, y, altitude, speed,
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
         time.sleep(3)
         client.rotateToYawAsync(curyaw+45).join()
-       # take_forward_picture(drone, airsim.ImageType.Infrared)  ## FIX SEARCH
+        #take_forward_picture(drone, airsim.ImageType.Infrared)
         #take_forward_picture(drone, airsim.ImageType.Scene)  
         print("going into calc")
         calculateDistance_angle( take_forward_picture(drone, airsim.ImageType.Infrared))
         
-
         # Stop key 
         if keyboard.is_pressed('q'):
             print("Stop key pressed. Exiting search.")
@@ -85,6 +82,10 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
     global running
 
     half_side = side_length / 2  
+    state = client.getMultirotorState()
+    q = state.kinematics_estimated.orientation
+    roll , pitch, yaw = to_eularian_angles(q)
+    curyaw=yaw
 
     # Waypoints for target to be centered
     square_corners = [
@@ -103,13 +104,7 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
 
         # Delay for stabilization
         time.sleep(3)
-
-        target_position = detect_brian() 
-        if target_position:
-            # Yaw, pitch, and roll
-            yaw_angle, pitch, roll = get_yaw_angle_to_target(client, target_position)
-            client.rotateToYawAsync(yaw_angle).join() 
-            client.moveByVelocityZAsync(0, 0, altitude, 1) 
+        client.rotateToYawAsync(curyaw+45).join()
 
         take_forward_picture(drone, airsim.ImageType.Scene)
 
@@ -328,9 +323,9 @@ try:
     # - run confirm target search
     # if there is nothing go to next waypoint and rerun waypoint search
 
-    create_waypoint()
+    create_waypoint() 
     time.sleep(3)
-    waypoint_search(client, 200, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # 200 , -12 bryans pos
+    waypoint_search(client, 200, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # change to bryans pos
 
 
 finally:
@@ -349,4 +344,3 @@ finally:
     # Disable API control
     client.enableApiControl(False)
     print("Flight operation completed.")
-
