@@ -1,6 +1,5 @@
 import airsim  # type: ignore
 import time
-import keyboard
 import os
 import numpy as np
 import cv2
@@ -16,7 +15,7 @@ client.takeoffAsync().join()
 
 waypoint_altitude = -15            # Fixed altitude (negative for AirSim)
 waypoint_side_length = 10          # Square size
-waypoint_speed = 10                # Speed (m/s)
+waypoint_speed = 8                 # Speed (m/s)
 
 confirm_target_altitude = -10      # Fixed altitude (negative for AirSim)
 confirm_target_side_length = 10    # Square size
@@ -66,17 +65,11 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
         time.sleep(3)
-        client.rotateToYawAsync(curyaw+45).join()
+        client.rotateToYawAsync(curyaw+135).join()
         #take_forward_picture(drone, airsim.ImageType.Infrared)
         #take_forward_picture(drone, airsim.ImageType.Scene)  
         print("going into calc")
-        calculateDistance_angle( take_forward_picture(drone, airsim.ImageType.Infrared))
-        
-        # Stop key 
-        if keyboard.is_pressed('q'):
-            print("Stop key pressed. Exiting search.")
-            running = False
-            break
+        calculateDistance_angle(take_forward_picture(drone, airsim.ImageType.Infrared))
 
 def confirm_target_search(client, center_x, center_y, side_length, altitude, speed):
     global running
@@ -104,15 +97,9 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
 
         # Delay for stabilization
         time.sleep(3)
-        client.rotateToYawAsync(curyaw+45).join()
+        client.rotateToYawAsync(curyaw+135).join()
 
         take_forward_picture(drone, airsim.ImageType.Scene)
-
-        # Stop key 
-        if keyboard.is_pressed('q'):
-            print("Stop key pressed. Exiting search.")
-            running = False
-            break
 
 def detect_brian():
     response = client.simGetObjectPose("OrangeBall")  # Replace with Brian
@@ -309,7 +296,6 @@ def CordCalulcation(angle, distance,clockwise):
     print("we got all the way down here!!!!!")
     return newX,newY, currentposition.z_val
 
-
 try:
     #brian_position = detect_brian()
     
@@ -320,17 +306,16 @@ try:
     # else:
     #     print("Target not detected. Skipping search.")
 
-    # go to waypoint
-    # run waypoint search
-    # if something is in infrared
-    # - use jacksons code to go 
+    # go to waypoint                        done
+    # run waypoint search                   done
+    # if something is in infrared           done
+    # - use jacksons code to go             
     # - run confirm target search
     # if there is nothing go to next waypoint and rerun waypoint search
 
     create_waypoint() 
     time.sleep(3)
-    waypoint_search(client, 200, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # change to bryans pos
-
+    waypoint_search(client, 230, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # Change to the waypoint given
 
 finally:
     # Land the drone safely
