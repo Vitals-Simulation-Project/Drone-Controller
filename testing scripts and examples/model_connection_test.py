@@ -59,6 +59,7 @@ client.armDisarm(True, vehicle_name="0")
 client.getMultirotorState(vehicle_name="0")
 state = print_state()
 
+
 data = {
     "model": MODEL,
     "messages": [

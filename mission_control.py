@@ -124,7 +124,7 @@ def parentController(drone_count):
     if USE_VLM:
         message_history.append({
             'role': 'user',
-            'content': "The waypoint queue is: " + str(waypoint_queue) + ". The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
+            'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
         })
         response = chat(
             messages = message_history,
