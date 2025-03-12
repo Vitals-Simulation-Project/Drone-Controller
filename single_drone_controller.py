@@ -6,11 +6,15 @@ import os
 import numpy as np
 import cv2
 import local_config
-import geopy.distance # type: ignore
+import base64
+import heapq
 
+from classes import Image
+from helper_functions import unreal_to_gps
 
 MIN_ALTITUDE = 10
 VELOCITY = 15
+
 
 # Enables api control, takes off drone, returns the client
 def takeOff(drone_name):
@@ -26,33 +30,12 @@ def takeOff(drone_name):
 
 
 
-# Convert Unreal Engine coordinates to GPS
-def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
-    """
-    Converts Unreal Engine (UE) coordinates to GPS coordinates.
-    """
-    home_lat, home_lon, home_alt = home_gps.latitude, home_gps.longitude, home_gps.altitude
-
-    # Convert UE X and Y to GPS using geopy
-    new_lat_lon = geopy.distance.distance(meters=ue_x).destination((home_lat, home_lon), bearing=0)  # North-South
-    # Use the resulting tuple and then apply the Y conversion (East-West)
-    new_lat_lon = geopy.distance.distance(meters=ue_y).destination(new_lat_lon, bearing=90)  # East-West
-
-    new_lat = new_lat_lon[0]  # Extract latitude
-    new_lon = new_lat_lon[1]  # Extract longitude
-
-    # Convert UE Z to GPS Altitude (UE Z is negative when going up)
-    new_alt = home_alt - ue_z  
-
-    return new_lat, new_lon, new_alt
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas):
+
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
     """ Drone process that listens for movement commands and sends status updates. """
-    #print(f"In single controller, Drone name: {drone_name}")
-
-    
     
     # Initialize AirSim client and take off
     client = takeOff(drone_name)
@@ -83,19 +66,31 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     
     def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
-        print(f"Taking picture from {camera_name}")
+        print(f"Taking picture from {camera_name}, type of {image_type}")
         response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
         
         filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
 
         img1d = np.frombuffer(response, dtype=np.uint8)
-        img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
 
-        cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+
+        if image_type == airsim.ImageType.Infrared:
+            img_gray = cv2.imdecode(img1d, cv2.IMREAD_GRAYSCALE)
+            cv2.imwrite(os.path.normpath(filename + '.png'), img_gray) # write to png on disk
+            _, buffer = cv2.imencode('.png', img_gray)  # Encode the image as PNG
+            base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
+        else:
+            img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png on disk
+            _, buffer = cv2.imencode('.png', img_rgb)  # Encode the image as PNG
+            base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
+
+    
+        return base64_image
 
 
     while not target_found.value:
-        current_target = current_target_dictionary[drone_name]
+        original_target = current_target = current_target_dictionary[drone_name]
 
         if current_target is not None:
             waypoint_name = current_target.name
@@ -104,16 +99,24 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             waypoint_y = current_target.y
             waypoint_z = current_target.z
 
+            print(f"Drone {drone_name} is moving to {waypoint_name}")
             print("Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
             print("Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
 
-            # print(f"Received command: Drone {drone_name} is moving to {waypoint_name} at {waypoint_x}, {waypoint_y}, {waypoint_z}")
-            # print(f"Current position: {client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position}")
-            #move_future = client.moveToPositionAsync(waypoint_x, waypoint_y, waypoint_z, 5, vehicle_name=drone_name)
+
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, VELOCITY, vehicle_name=drone_name)
             status_dictionary[drone_name] = "MOVING"
 
             while True:
+                if current_target_dictionary[drone_name] != original_target:
+                    print(f"Drone {drone_name} received a new target while moving to {waypoint_name}")
+                    # interrupt movement with hover
+                    client.hoverAsync().join()
+
+                    # push the original target back to the queue to be revisited later
+                    heapq.heappush(waypoint_queue, original_target)
+                    break
+
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
@@ -138,11 +141,18 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             status_dictionary[drone_name] = "SEARCHING"
             print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
 
+            # Take a picture
+            base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
+
+            image_queue.put(Image(drone_name, airsim.ImageType.Scene, base64_picture))
+
+
+
             time.sleep(60)
 
             current_target_dictionary[drone_name] = None
             print(f"Drone {drone_name} finished searching {waypoint_name}")
-            searched_areas[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
+            searched_areas_dictionary[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
             status_dictionary[drone_name] = "WAITING"
 
 
