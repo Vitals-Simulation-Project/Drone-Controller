@@ -65,16 +65,47 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
+        
+        client.rotateToYawAsync(curyaw+135).join()
         client.hoverAsync()
         time.sleep(10)
-        client.rotateToYawAsync(curyaw+135).join()
+        
         infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
-        #take_forward_picture(drone, airsim.ImageType.Scene)  
-        print("going into calc")
-        client.hoverAsync()
-        #calculateDistance_angle(take_forward_picture(drone, airsim.ImageType.Infrared))
-        #calculateDistance_angle()
-        calculateDistance_angle(infared_image)
+
+        img = infared_image
+  
+
+   
+        img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
+        img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+        hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
+        ##print("im here 5")
+
+        ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
+
+
+        lower = np.array([0,0,0], dtype = "uint8")
+        upper = np.array([192,192,192], dtype = "uint8")
+
+
+        mask = cv2.inRange(hsv, lower, upper)
+        #print("im here 6")
+        cv2.imshow("Mask",mask)
+        #cv2.imshow("img",img1d)
+        cv2.waitKey(0)
+        try:
+            
+            horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
+            print("going into calc")
+            calculateDistance_angle( mask)
+            return
+
+        except IndexError:
+            print("continue")
+        
+
+
+    
 
 def confirm_target_search(client, center_x, center_y, side_length, altitude, speed):
     global running
@@ -151,8 +182,8 @@ def MoveToGPSAsyncCollsion(self, latitude, longitude, altitude, velocity, timeou
             ##print("moving up")
     self.hoverAsync
 
-def calculateDistance_angle(infared):
-    #client.hoverAsync()
+def calculateDistance_angle(mask):
+    client.hoverAsync()
     #print("im here 1")
     responses = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False),airsim.ImageRequest("front_center", airsim.ImageType.Infrared,False,False)])
     #TEST_response= client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name='0') ## throws a fit if i do them both in one call
@@ -179,27 +210,28 @@ def calculateDistance_angle(infared):
     ##img = responses[1]
     #img = infared
     #print("im here 3")
-    img = infared
+    # img = infared
   
 
    
-    img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
-    img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
-    hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-    ##print("im here 5")
+    # img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
+    # img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+    # hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
+    # ##print("im here 5")
 
-    ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
-
-
-    lower = np.array([0,0,0], dtype = "uint8")
-    upper = np.array([192,192,192], dtype = "uint8")
+    # ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
 
 
-    mask = cv2.inRange(hsv, lower, upper)
-    #print("im here 6")
-    cv2.imshow("Mask",mask)
-    #cv2.imshow("img",img1d)
-    cv2.waitKey(0)
+    # lower = np.array([0,0,0], dtype = "uint8")
+    # upper = np.array([192,192,192], dtype = "uint8")
+
+
+    # mask = cv2.inRange(hsv, lower, upper)
+    # #print("im here 6")
+    # cv2.imshow("Mask",mask)
+    # #cv2.imshow("img",img1d)
+    # cv2.waitKey(0)
+    # horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     ##mask.resize(256,288)
     
     
@@ -209,18 +241,12 @@ def calculateDistance_angle(infared):
     height= client.getDistanceSensorData(distance_sensor_name='Distance').distance
     ##print("im here 3")
 
-#     try:
-#     print(values[n])
-#   except IndexError:
-#     # Index Out of Bound 
-#     print("value doesnt exist")
+
     
     perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
-    # try:
+  
     horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
-    # except:
-    #     print("finally")
-    #     exit
+    
     
     
     if(horizontal >= (256/2)): # was 256 before david :(
@@ -236,7 +262,11 @@ def calculateDistance_angle(infared):
     #print(vert)
     #print("vert ^^^^")
     ##print(height)
-    calculations = math.sqrt(distance**2 - height**2) ## need a catch for this i think 
+    try:
+        calculations = math.sqrt(distance**2 - height**2) ## need a catch for this i think 
+    except ValueError:
+        print("math mo fucking domain")
+        return
     horizontalangle = perpixel * horizontal
     #time.sleep(30)
     print(horizontalangle , calculations , clockwise)
