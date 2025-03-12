@@ -65,12 +65,16 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
-        time.sleep(3)
-        #client.rotateToYawAsync(curyaw+135).join()
-        #take_forward_picture(drone, airsim.ImageType.Infrared)
+        client.hoverAsync()
+        time.sleep(10)
+        client.rotateToYawAsync(curyaw+135).join()
+        infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
         #take_forward_picture(drone, airsim.ImageType.Scene)  
         print("going into calc")
-        calculateDistance_angle(take_forward_picture(drone, airsim.ImageType.Infrared))
+        client.hoverAsync()
+        #calculateDistance_angle(take_forward_picture(drone, airsim.ImageType.Infrared))
+        #calculateDistance_angle()
+        calculateDistance_angle(infared_image)
 
 def confirm_target_search(client, center_x, center_y, side_length, altitude, speed):
     global running
@@ -173,8 +177,9 @@ def calculateDistance_angle(infared):
    
   
     ##img = responses[1]
-    img = infared
+    #img = infared
     #print("im here 3")
+    img = infared
   
 
    
@@ -212,7 +217,7 @@ def calculateDistance_angle(infared):
     
     perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
     # try:
-    horizontal = np.argwhere(mask)[5][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
+    horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     # except:
     #     print("finally")
     #     exit
@@ -224,7 +229,7 @@ def calculateDistance_angle(infared):
     elif(horizontal<(256/2)): # was 256 before david :(
         print("left")
         clockwise = False   
-    vert = np.argwhere(mask)[5][0]
+    vert = np.argwhere(mask)[0][0]
     distance = depth_img_in_meters[vert][horizontal][0] ## could be back wards
     #print(horizontal)
     #print("horizontal ^^^")
@@ -280,6 +285,12 @@ def CordCalulcation(angle, distance,clockwise):
     
     
     print(yaw)
+    if (yaw > 180 ):
+        yaw = yaw - 90
+        yaw = -yaw
+    elif (yaw < -180):
+        yaw = yaw + 90
+        yaw = abs(yaw)
     currentposition = state.kinematics_estimated.position
     if(yaw >0  and yaw <= 90 ):
         print("quad 1")
@@ -302,7 +313,7 @@ def CordCalulcation(angle, distance,clockwise):
     print (currentposition)
     print(newX,newY)
     print("we got all the way down here!!!!!")
-    confirm_target_search(client, newX, newY, confirm_target_side_length, confirm_target_altitude, confirm_target_speed)
+    confirm_target_search(client, newX, newY, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
     
     
     #return newX,newY, currentposition.z_val
@@ -325,6 +336,7 @@ try:
     # if there is nothing go to next waypoint and rerun waypoint search
 
     create_waypoint() 
+    
     time.sleep(3)
     waypoint_search(client, 230, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # Change to the waypoint given
     # state = client.getMultirotorState()
