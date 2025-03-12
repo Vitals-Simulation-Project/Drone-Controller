@@ -21,6 +21,7 @@ from helper_functions import reconstruct_image_from_base64
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
+DRONE_COUNT = 5
 
 USE_VLM = True
 
@@ -31,11 +32,11 @@ USE_VLM = True
 message_history = [
     {
         'role': 'user',
-        'content': (
-            "You are a drone operator conducting a simulated search and rescue mission.\n"
-            "You have 5 drones at your disposal to locate a missing person.\n"
+        'content':  
+            "You are a drone operator conducting a simulated search and rescue mission.\n" +
+            f"You have {DRONE_COUNT} drone(s) at your disposal to locate a missing person.\n" +
             "Your primary task is to create and assign waypoints for the drones, analyze captured images, and determine the target's location."
-        ),
+        ,
     },
     {
         'role': 'assistant',
@@ -46,7 +47,7 @@ message_history = [
         'content': (
             "The search process follows these steps:\n"
             "1. You will receive a list of waypoints with their locations, along with the current locations of the drones.\n"
-            "2. Using this information, generate a target waypoint for each drone, utilizing closeness and urgency.\n"
+            "2. Using this information, generate a target waypoint for each drone, utilizing the distance they are away and the waypoint's priority.\n"
             "3. The drones will travel to their individual waypoint and capture infrared (IR) images to detect potential heat signatures.\n"
             "4. If a heat signature is detected, the drones will take regular images to visually confirm the target.\n"
             "5. The drones will transmit regular images to you for analysis.\n"
@@ -117,6 +118,25 @@ def parentController(drone_count):
         # for drone_name in status_dictionary:
         #     print(f"Drone {drone_name} status: {status_dictionary[drone_name]}")
         time.sleep(5)
+
+
+    # Send the initial waypoints to the VLM
+    if USE_VLM:
+        message_history.append({
+            'role': 'user',
+            'content': "The waypoint queue is: " + str(waypoint_queue) + ". The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
+        })
+        response = chat(
+            messages = message_history,
+            model = MODEL,
+            format = VLMOutput.model_json_schema()
+        )
+    
+    print(response)
+    message = VLMOutput.model_validate_json(response.message.content)
+    print(message.assigned_target_dictionary)
+
+    time.sleep(60)
 
 
     start_time = time.time()
@@ -190,5 +210,4 @@ if __name__ == '__main__':
     if not os.path.exists(imgDir):
         os.makedirs(imgDir)
 
-    drone_count = 5
-    parentController(drone_count)
+    parentController(DRONE_COUNT)

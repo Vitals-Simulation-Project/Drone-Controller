@@ -29,7 +29,7 @@ class Image:
 
 
 class VLMOutput(BaseModel):
-    waypoints: list[int] # id of the waypoint
+    assigned_target_dictionary: dict # drone maps to waypoint
     drone_id: int
     image_result: str # can be "heat signature detected", "no heat signature detected", "target confirmed", "target not confirmed"
     target_location: tuple # location of the target
