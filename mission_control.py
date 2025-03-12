@@ -20,12 +20,13 @@ import single_drone_controller as sdc
 from model_files.pull_model import load_model
 from classes import Waypoint, Image, VLMOutput
 from helper_functions import reconstruct_image_from_base64
+from websocket.websocket_server import start_websocket_server
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 URI = "ws://localhost:8765" # websocket server URI
 
-DRONE_COUNT = 5
+DRONE_COUNT = 1
 
 USE_VLM = False
 
@@ -121,28 +122,28 @@ def setup_processes(drone_count):
 async def parentController(drone_count):
     """Handles async parts of the program."""
 
-    print("Starting drone processes...")
+    print("Waiting for drones to initialize...")
     # Setup multiprocessing in a separate thread (non-blocking)
     loop = asyncio.get_running_loop()
     processes, manager, current_target_dictionary, status_dictionary, target_found, image_queue, waypoint_queue = await loop.run_in_executor(
         None, setup_processes, drone_count
     )
 
-    print("Waiting for all drones to take off...", end="")
 
     # Wait until all drones are in "WAITING" state
     while not all(status == "WAITING" for status in status_dictionary.values()):
         await asyncio.sleep(1)
     
-    print("All drones are ready.")
-    
-    print("Connecting to websocket server...")
+
+    print("Starting the websocket server...", end="")
+    # Start the WebSocket server as a background task
+    websocket_task = asyncio.create_task(start_websocket_server())
+    print("Done.")
 
     start_time = time.time()
 
     try:
         async with websockets.connect(URI) as websocket:
-            print("Connected to websocket server")
 
             while not target_found.value:
 

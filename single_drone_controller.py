@@ -160,7 +160,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         else:
             print(f"Drone {drone_name} is waiting for commands.")
             status_dictionary[drone_name] = "WAITING"
-            time.sleep(5)
+            time.sleep(10)
 
 
 
