@@ -11,6 +11,8 @@ import json
 from ollama import chat # type: ignore
 from pydantic import BaseModel # type: ignore
 import base64
+import asyncio
+
 
 # project imports
 import local_config
@@ -73,9 +75,8 @@ message_history = [
 
 
 
-def parentController(drone_count):
+async def parentController(drone_count):
     """ Parent process to send commands and receive status updates from drones. """
-    mp.set_start_method('spawn')  # Windows-specific start method
     manager = mp.Manager() # Manager to share data between processes
 
 
@@ -201,8 +202,7 @@ def parentController(drone_count):
 
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # directory to store pictures
     imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 
@@ -210,4 +210,6 @@ if __name__ == '__main__':
     if not os.path.exists(imgDir):
         os.makedirs(imgDir)
 
-    parentController(DRONE_COUNT)
+    mp.set_start_method('spawn')
+
+    asyncio.run(parentController(DRONE_COUNT))

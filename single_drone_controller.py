@@ -8,6 +8,7 @@ import cv2
 import local_config
 import base64
 import heapq
+import asyncio
 
 from classes import Image
 from helper_functions import unreal_to_gps
@@ -17,7 +18,7 @@ VELOCITY = 15
 
 
 # Enables api control, takes off drone, returns the client
-def takeOff(drone_name):
+async def takeOff(drone_name):
     client = airsim.MultirotorClient(local_config.LOCAL_IP)
     client.confirmConnection()
     client.enableApiControl(True, drone_name)
@@ -34,14 +35,14 @@ def takeOff(drone_name):
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
+async def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
     """ Drone process that listens for movement commands and sends status updates. """
     
     # Initialize AirSim client and take off
     client = takeOff(drone_name)
 
 
-    def move_drone_relative(drone_name, x, y, z, speed):
+    async def move_drone_relative(drone_name, x, y, z, speed):
         state = client.getMultirotorState(vehicle_name=drone_name)
         current_position = state.kinematics_estimated.position
         new_position = airsim.Vector3r(current_position.x_val + x, current_position.y_val + y, current_position.z_val + z)    
@@ -50,7 +51,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     
 
 
-    def move_drone_gps_avoid_collision(drone_name, latitude, longitude, altitude, velocity):
+    async def move_drone_gps_avoid_collision(drone_name, latitude, longitude, altitude, velocity):
         client.moveToGPSAsync(latitude, longitude, altitude, velocity, vehicle_name=drone_name)
         t_end = time.time() + 30
         while (time.time()<t_end):
@@ -64,7 +65,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
     
-    def take_forward_picture(drone_name, image_type):
+    async def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
         print(f"Taking picture from {camera_name}, type of {image_type}")
         response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
