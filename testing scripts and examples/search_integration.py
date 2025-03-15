@@ -9,7 +9,6 @@ client = airsim.MultirotorClient()
 client.confirmConnection()
 client.enableApiControl(True)
 
-# Arm the drone
 client.armDisarm(True)
 client.takeoffAsync().join()
 
@@ -83,28 +82,21 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
     # except ValueError:
     #     #create_mask()
     #     print("fuck yall")
-
-
-      
-         
+    
 def create_mask():
     infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
 
     img = infared_image
-  
-
-   
+    
     img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
     img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
     hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-     ##print("im here 5")
+    #print("im here 5")
 
     ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
 
-
     lower = np.array([0,0,0], dtype = "uint8")
     upper = np.array([192,192,192], dtype = "uint8")
-
 
     mask = cv2.inRange(hsv, lower, upper)   
     #print("im here 6")
@@ -114,7 +106,7 @@ def create_mask():
     try:     
         horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
         print("going into calc")
-        calculateDistance_angle( mask)
+        calculateDistance_angle(mask)
         return True
     except IndexError:
         print("continue")
@@ -125,10 +117,6 @@ def create_mask():
 
     #return mask
     
-
-
-    
-
 def confirm_target_search(client, center_x, center_y, side_length, altitude, speed):
     global running
 
@@ -159,13 +147,6 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
 
         take_forward_picture(drone, airsim.ImageType.Scene)
 
-def detect_brian():
-    response = client.simGetObjectPose("OrangeBall")  # Replace with Brian
-    
-    if response.position:
-        return response.position
-    return None
-
 def create_waypoint():
     state = client.getMultirotorState()
     currentposition = state.kinematics_estimated.position
@@ -174,23 +155,6 @@ def create_waypoint():
     client.moveToPositionAsync(currentposition.x_val+200,currentposition.y_val-12 , currentposition.z_val-15 ,20, vehicle_name= drone).join() 
     currentposition = state.kinematics_estimated.position
     return currentposition
-
-
-def get_yaw_angle_to_target(client, target_position):
-    drone_state = client.getMultirotorState()
-    drone_position = drone_state.kinematics_estimated.position
-
-    dx = target_position.x_val - drone_position.x_val
-    dy = target_position.y_val - drone_position.y_val
-
-    yaw = math.atan2(dy, dx)
-    yaw_deg = math.degrees(yaw) % 360
-
-    # Drone tilt
-    pitch = -90     # Downward tilt
-    roll = 45       # Sideways tilt
-
-    return yaw_deg, pitch, roll
 
 def MoveToGPSAsyncCollsion(self, latitude, longitude, altitude, velocity, timeout_sec = 3e+38,  vehicle_name = ''):
     self.moveToGPSAsync(latitude,longitude,altitude,velocity,vehicle_name= vehicle_name)
@@ -201,7 +165,7 @@ def MoveToGPSAsyncCollsion(self, latitude, longitude, altitude, velocity, timeou
         
             self.moveToGPSAsync(gpsData.latitude,gpsData.latitude,gpsData.altitude+10,3).join()
             self.moveToGPSAsync(latitude,longitude,altitude,velocity,vehicle_name= vehicle_name)
-            ##print("moving up")
+            #print("moving up")
     self.hoverAsync
 
 def calculateDistance_angle(mask):
@@ -211,42 +175,35 @@ def calculateDistance_angle(mask):
     #TEST_response= client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name='0') ## throws a fit if i do them both in one call
     depthPerspective = responses[0]
 
-    ##depth = responses[0]
+    #depth = responses[0]
     #print("im here 2")
     
     depth_img_in_meters = airsim.list_to_2d_float_array(depthPerspective.image_data_float, depthPerspective.width, depthPerspective.height) 
     #print("im here 3")
     depth_img_in_meters = depth_img_in_meters.reshape(depthPerspective.height, depthPerspective.width, 1)
-   # print("height")
+    #print("height")
     #print( depthPerspective.height)
     #print("width" )
     #print(depthPerspective.width)
     depth_8bit_lerped = np.interp(depth_img_in_meters, (0, 100), (0, 255))
 
-    ##print(responses[0].width) #256
-    ##print("width^^^^^")
-
-    
-   
+    #print(responses[0].width) #256
+    #print("width^^^^^")
   
-    ##img = responses[1]
+    #img = responses[1]
     #img = infared
     #print("im here 3")
     # img = infared
   
-
-   
     # img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
     # img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
     # hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-    # ##print("im here 5")
+    # print("im here 5")
 
     # ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
 
-
     # lower = np.array([0,0,0], dtype = "uint8")
     # upper = np.array([192,192,192], dtype = "uint8")
-
 
     # mask = cv2.inRange(hsv, lower, upper)
     # #print("im here 6")
@@ -256,20 +213,14 @@ def calculateDistance_angle(mask):
     # horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     ##mask.resize(256,288)
     
-    
-    
     ##print("im here 7")
 
     height= client.getDistanceSensorData(distance_sensor_name='Distance').distance
     ##print("im here 3")
 
-
-    
     perpixel = 90/512 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
   
     horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
-    
-    
     
     if(horizontal >= (512/2)): # was 256 before david :(
         print("right")
@@ -291,8 +242,8 @@ def calculateDistance_angle(mask):
         #return
     horizontalangle = perpixel * horizontal
     #time.sleep(30)
-    print(horizontalangle , calculations , clockwise)
-    CordCalulcation(horizontalangle, calculations , clockwise)
+    print(horizontalangle, calculations, clockwise)
+    CordCalulcation(horizontalangle, calculations, clockwise)
     ##return horizontalangle , calculations , clockwise
     ##return "test"
 
@@ -323,7 +274,7 @@ def to_eularian_angles(q):
     return (roll, pitch, yaw)  # Standard order: roll, pitch, yaw
 
 def CordCalulcation(angle, distance,clockwise):
-    ## bearing = client. get its angle from north
+    #bearing = client. get its angle from north
     
     state = client.getMultirotorState()
     q = state.kinematics_estimated.orientation
@@ -335,8 +286,6 @@ def CordCalulcation(angle, distance,clockwise):
     elif(clockwise == False):
         yaw = yaw - angle
     
-    
-
     if (yaw > 180 ):
         temp = yaw - 180
         yaw = -abs(180-temp)
@@ -372,26 +321,9 @@ def CordCalulcation(angle, distance,clockwise):
     print("we got all the way down here!!!!!")
     confirm_target_search(client, newX, newY, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
     
-    
     #return newX,newY, currentposition.z_val
 
 try:
-    #brian_position = detect_brian()
-    
-    # if brian_position:
-    #     center_x, center_y = brian_position.x_val, brian_position.y_val
-    #     waypoint_search(client, center_x, center_y, waypoint_side_length, waypoint_altitude, waypoint_speed)
-    #     confirm_target_search(client, center_x, center_y, confirm_target_side_length, confirm_target_altitude, confirm_target_speed)
-    # else:
-    #     print("Target not detected. Skipping search.")
-
-    # go to waypoint                        done
-    # run waypoint search                   done
-    # if something is in infrared           done
-    # - use jacksons code to go             
-    # - run confirm target search
-    # if there is nothing go to next waypoint and rerun waypoint search
-
     create_waypoint() 
     
     time.sleep(3)
@@ -402,7 +334,7 @@ try:
     # client.moveToPositionAsync(99,-8.8 , currentposition.z_val-15 ,20, vehicle_name= drone).join() 
 
 finally:
-    # Land the drone safely
+    # Land the drone
     print("Landing")
     client.landAsync().join()
 
