@@ -70,39 +70,61 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
         client.hoverAsync()
         time.sleep(10)
         
-        infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
+        if (create_mask() == True):
+            return
+   # mask = create_mask()
+    # try:     
+    #     horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
+    #     print("going into calc")
+    #     calculateDistance_angle( mask)
+    #     return
+    # except IndexError:
+    #     print("continue")
+    # except ValueError:
+    #     #create_mask()
+    #     print("fuck yall")
 
-        img = infared_image
+
+      
+         
+def create_mask():
+    infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
+
+    img = infared_image
   
 
    
-        img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
-        img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
-        hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-        ##print("im here 5")
+    img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
+    img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+    hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
+     ##print("im here 5")
 
-        ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
-
-
-        lower = np.array([0,0,0], dtype = "uint8")
-        upper = np.array([192,192,192], dtype = "uint8")
+    ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
 
 
-        mask = cv2.inRange(hsv, lower, upper)
-        #print("im here 6")
-        cv2.imshow("Mask",mask)
-        #cv2.imshow("img",img1d)
-        cv2.waitKey(0)
-        try:
-            
-            horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
-            print("going into calc")
-            calculateDistance_angle( mask)
-            return
+    lower = np.array([0,0,0], dtype = "uint8")
+    upper = np.array([192,192,192], dtype = "uint8")
 
-        except IndexError:
-            print("continue")
-        
+
+    mask = cv2.inRange(hsv, lower, upper)   
+    #print("im here 6")
+    cv2.imshow("Mask",mask)
+    #cv2.imshow("img",img1d)
+    cv2.waitKey(0)
+    try:     
+        horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
+        print("going into calc")
+        calculateDistance_angle( mask)
+        return True
+    except IndexError:
+        print("continue")
+        return False
+    except ValueError:
+        bool = create_mask()
+        return bool
+
+    #return mask
+    
 
 
     
@@ -243,16 +265,16 @@ def calculateDistance_angle(mask):
 
 
     
-    perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
+    perpixel = 90/512 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
   
     horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     
     
     
-    if(horizontal >= (256/2)): # was 256 before david :(
+    if(horizontal >= (512/2)): # was 256 before david :(
         print("right")
         clockwise = True
-    elif(horizontal<(256/2)): # was 256 before david :(
+    elif(horizontal<(512/2)): # was 256 before david :(
         print("left")
         clockwise = False   
     vert = np.argwhere(mask)[0][0]
@@ -262,11 +284,11 @@ def calculateDistance_angle(mask):
     #print(vert)
     #print("vert ^^^^")
     ##print(height)
-    try:
-        calculations = math.sqrt(distance**2 - height**2) ## need a catch for this i think 
-    except ValueError:
-        print("math mo fucking domain")
-        return
+    #try:
+    calculations = math.sqrt(distance**2 - height**2) ## need a catch for this i think 
+    #except ValueError:
+       # print("math mo fucking domain")
+        #return
     horizontalangle = perpixel * horizontal
     #time.sleep(30)
     print(horizontalangle , calculations , clockwise)
@@ -314,14 +336,19 @@ def CordCalulcation(angle, distance,clockwise):
         yaw = yaw - angle
     
     
-    print(yaw)
+
     if (yaw > 180 ):
-        yaw = yaw - 90
-        yaw = -yaw
+        temp = yaw - 180
+        yaw = -abs(180-temp)
+        #yaw = yaw - 90
+        #yaw = -yaw
     elif (yaw < -180):
-        yaw = yaw + 90
-        yaw = abs(yaw)
+        temp = yaw + 180
+        yaw = abs(180 - temp)
+        #yaw = yaw + 90
+        #yaw = abs(yaw)
     currentposition = state.kinematics_estimated.position
+    print(yaw)
     if(yaw >0  and yaw <= 90 ):
         print("quad 1")
         newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
