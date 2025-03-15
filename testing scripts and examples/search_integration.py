@@ -67,7 +67,7 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
         
         client.rotateToYawAsync(curyaw+135).join()
         client.hoverAsync()
-        time.sleep(10)
+        time.sleep(5)
         
         if (create_mask() == True):
             return
@@ -217,15 +217,14 @@ def calculateDistance_angle(mask):
 
     height= client.getDistanceSensorData(distance_sensor_name='Distance').distance
     ##print("im here 3")
-
-    perpixel = 90/512 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
+    perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
   
     horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     
-    if(horizontal >= (512/2)): # was 256 before david :(
+    if(horizontal >= (256/2)): # was 256 before david :(
         print("right")
         clockwise = True
-    elif(horizontal<(512/2)): # was 256 before david :(
+    elif(horizontal<(256/2)): # was 256 before david :(
         print("left")
         clockwise = False   
     vert = np.argwhere(mask)[0][0]
@@ -286,34 +285,38 @@ def CordCalulcation(angle, distance,clockwise):
     elif(clockwise == False):
         yaw = yaw - angle
     
-    if (yaw > 180 ):
-        temp = yaw - 180
-        yaw = -abs(180-temp)
-        #yaw = yaw - 90
-        #yaw = -yaw
-    elif (yaw < -180):
-        temp = yaw + 180
-        yaw = abs(180 - temp)
-        #yaw = yaw + 90
-        #yaw = abs(yaw)
+    #client.rotateToYawAsync(yaw).join()
+    #time.sleep(3)
+    # if (yaw > 180 ):
+    #     temp = yaw - 180
+    #     yaw = -abs(180-temp)
+    #     #yaw = yaw - 90
+    #     #yaw = -yaw
+    # elif (yaw < -180):
+    #     temp = yaw + 180
+    #     yaw = abs(180 - temp)
+    #     #yaw = yaw + 90
+    #     #yaw = abs(yaw)
     currentposition = state.kinematics_estimated.position
     print(yaw)
-    if(yaw >0  and yaw <= 90 ):
-        print("quad 1")
-        newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
-        newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
-    elif(yaw >90  and yaw <= 180):
-        print("quad 2")
-        newY= currentposition.y_val +math.sin(math.radians(angle)) * distance
-        newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
-    elif(yaw >-180  and yaw <= -90):
-        print("quad 3")
-        newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
-        newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
-    elif(yaw >-90  and yaw <= 0):
-        print("quad 4")
-        newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
-        newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
+    # if(yaw >0  and yaw <= 90 ):
+    #     print("quad 1")
+    #     newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
+    #     newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
+    # elif(yaw >90  and yaw <= 180):
+    #     print("quad 2")
+    #     newY= currentposition.y_val +math.sin(math.radians(angle)) * distance
+    #     newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
+    # elif((yaw >-180  and yaw <= -90) or (yaw > 180 and yaw <= 270)):
+    #     print("quad 3")
+    #     newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
+    #     newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
+    # elif((yaw >-90  and yaw <= 0) or (yaw >270 and yaw <= 360)):
+    #     print("quad 4")
+    #     newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
+    #     newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
+    newY= currentposition.y_val + (math.sin(math.radians(yaw)) * distance)
+    newX= currentposition.x_val + (math.cos(math.radians(yaw)) * distance )
     
     currentposition = state.kinematics_estimated.position
     print (currentposition)
