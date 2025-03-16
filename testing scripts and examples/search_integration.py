@@ -47,8 +47,7 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
     half_side = side_length / 2  
     state = client.getMultirotorState()
     q = state.kinematics_estimated.orientation
-    roll , pitch, yaw = to_eularian_angles(q)
-    curyaw=yaw
+   
 
     # Waypoints for target to be centered
     square_corners = [
@@ -64,7 +63,8 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
-        
+        roll , pitch, yaw = to_eularian_angles(q)
+        curyaw=yaw
         client.rotateToYawAsync(curyaw+135).join()
         client.hoverAsync()
         time.sleep(5)
@@ -229,6 +229,11 @@ def calculateDistance_angle(mask):
         clockwise = False   
     vert = np.argwhere(mask)[0][0]
     distance = depth_img_in_meters[vert][horizontal][0] ## could be back wards
+
+    print(depth_img_in_meters[vert][horizontal][0])
+    print("depth 0")
+    print(depth_img_in_meters[vert][horizontal][1])
+    print("depth 1")
     #print(horizontal)
     #print("horizontal ^^^")
     #print(vert)
@@ -285,8 +290,9 @@ def CordCalulcation(angle, distance,clockwise):
     elif(clockwise == False):
         yaw = yaw - angle
     
-    #client.rotateToYawAsync(yaw).join()
-    #time.sleep(3)
+    
+    client.rotateToYawAsync(200).join() ## correct angle is 200
+    time.sleep(3)
     # if (yaw > 180 ):
     #     temp = yaw - 180
     #     yaw = -abs(180-temp)
