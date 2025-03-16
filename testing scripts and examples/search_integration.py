@@ -285,7 +285,9 @@ def CordCalulcation(angle, distance,clockwise):
         yaw = yaw + angle
     elif(clockwise == False):
         yaw = yaw - angle
-    
+    client.rotateToYawAsync(yaw).join()
+    time.sleep(3)
+
     if (yaw > 180 ):
         temp = yaw - 180
         yaw = -abs(180-temp)
@@ -304,8 +306,8 @@ def CordCalulcation(angle, distance,clockwise):
         newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
     elif(yaw >90  and yaw <= 180):
         print("quad 2")
-        newY= currentposition.y_val +math.sin(math.radians(angle)) * distance
-        newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
+        newX= currentposition.y_val +math.sin(math.radians(angle)) * distance
+        newY= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
     elif(yaw >-180  and yaw <= -90):
         print("quad 3")
         newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
