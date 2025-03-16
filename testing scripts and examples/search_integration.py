@@ -146,6 +146,7 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
         client.rotateToYawAsync(curyaw+135).join()
 
         take_forward_picture(drone, airsim.ImageType.Scene)
+        calculateDistance_angle(create_mask())
 
 def create_waypoint():
     state = client.getMultirotorState()
@@ -290,8 +291,8 @@ def CordCalulcation(angle, distance,clockwise):
     elif(clockwise == False):
         yaw = yaw - angle
     
-    
-    client.rotateToYawAsync(200).join() ## correct angle is 200
+    print(yaw)
+    client.rotateToYawAsync(yaw).join() ## correct angle is 200
     time.sleep(3)
     # if (yaw > 180 ):
     #     temp = yaw - 180
@@ -305,24 +306,24 @@ def CordCalulcation(angle, distance,clockwise):
     #     #yaw = abs(yaw)
     currentposition = state.kinematics_estimated.position
     print(yaw)
-    # if(yaw >0  and yaw <= 90 ):
-    #     print("quad 1")
-    #     newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
-    #     newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
-    # elif(yaw >90  and yaw <= 180):
-    #     print("quad 2")
-    #     newY= currentposition.y_val +math.sin(math.radians(angle)) * distance
-    #     newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
-    # elif((yaw >-180  and yaw <= -90) or (yaw > 180 and yaw <= 270)):
-    #     print("quad 3")
-    #     newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
-    #     newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
-    # elif((yaw >-90  and yaw <= 0) or (yaw >270 and yaw <= 360)):
-    #     print("quad 4")
-    #     newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
-    #     newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
-    newY= currentposition.y_val + (math.sin(math.radians(yaw)) * distance)
-    newX= currentposition.x_val + (math.cos(math.radians(yaw)) * distance )
+    if(yaw >0  and yaw <= 90 ):
+        print("quad 1")
+        newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
+        newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
+    elif(yaw >90  and yaw <= 180):
+        print("quad 2")
+        newY= currentposition.y_val +math.sin(math.radians(angle)) * distance
+        newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
+    elif((yaw >-180  and yaw <= -90) or (yaw > 180 and yaw <= 270)):
+        print("quad 3")
+        newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
+        newX= currentposition.x_val - (math.cos(math.radians(angle)) * distance )
+    elif((yaw >-90  and yaw <= 0) or (yaw >270 and yaw <= 360)):
+        print("quad 4")
+        newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
+        newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
+    # newY= currentposition.y_val + (math.sin(math.radians(yaw)) * distance)
+    # newX= currentposition.x_val + (math.cos(math.radians(yaw)) * distance )
     
     currentposition = state.kinematics_estimated.position
     print (currentposition)
