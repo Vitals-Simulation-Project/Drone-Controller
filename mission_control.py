@@ -22,7 +22,7 @@ import single_drone_controller as sdc
 from model_files.pull_model import load_model
 from classes import Waypoint, Image, VLMOutput
 from helper_functions import reconstruct_image_from_base64
-from websocket.websocket_server import start
+from websocket.websocket_server import start_websocket_server
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
@@ -80,6 +80,7 @@ async def connect_websocket():
         while True:
             msg = await websocket.recv()
             UI_DATA_QUEUE.put(msg)  # Store message for sync retrieval
+            
 
 def start_websocket_client():
     """Start the websocket client (on the simulation side) to connect to the server"""
@@ -93,7 +94,7 @@ def fetch_websocket_data():
     """Synchronous function to get data from the websocket queue from the UI"""
     if not UI_DATA_QUEUE.empty():
         return UI_DATA_QUEUE.get()
-    return None  # No new message
+    return None
 
 
 
@@ -138,7 +139,7 @@ def parentController(drone_count):
 
 
     # Start the websocket server as a separate thread    
-    websocket_server_thread = threading.Thread(target=start, daemon=True)
+    websocket_server_thread = threading.Thread(target=start_websocket_server, daemon=True)
     websocket_server_thread.start()
 
 
@@ -176,10 +177,19 @@ def parentController(drone_count):
     try:
         while not target_found.value:
             
-            # Fetch WebSocket messages (sync retrieval)
+            # fetch WebSocket messages (sync retrieval)
             websocket_data = fetch_websocket_data()
             if websocket_data:
                 print(f"Received UI WebSocket message: {websocket_data}")
+
+                # process the JSON data
+                json_data = json.loads(websocket_data)
+                if json_data["MessageType"] == "AddWaypoint":
+                    # divide by 100 to convert from cm to m
+                    waypoint = Waypoint(json_data["WaypointID"], json_data["X"] / 100, json_data["Y"] / 100, json_data["Z"] / 100, json_data["Priority"])
+                    heapq.heappush(waypoint_queue, waypoint)
+                    print(f"Added waypoint {waypoint.name} to the queue")
+
 
             # only check drone status every 5 seconds
             if time.time() - start_time > 5:

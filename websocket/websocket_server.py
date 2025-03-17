@@ -35,7 +35,7 @@ async def handler(websocket):
         CLIENTS.remove(websocket)
 
 
-async def start_websocket_server():
+async def start():
     '''Starts the websocket server on \"ws://localhost:8765\"'''
 
     server = await websockets.serve(handler, HOST, PORT_NUMBER)
@@ -43,9 +43,9 @@ async def start_websocket_server():
     await server.wait_closed()
 
 
-def start():
+def start_websocket_server():
     '''Starts the websocket server in an asyncio event loop'''
     
     server_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(server_loop)
-    server_loop.run_until_complete(start_websocket_server())
+    server_loop.run_until_complete(start())
