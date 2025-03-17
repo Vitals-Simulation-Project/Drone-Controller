@@ -20,12 +20,13 @@ import single_drone_controller as sdc
 from model_files.pull_model import load_model
 from classes import Waypoint, Image, VLMOutput
 from helper_functions import reconstruct_image_from_base64
+from websocket.websocket_server import start_websocket_server
 
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 URI = "ws://localhost:8765" # websocket server URI
 
-DRONE_COUNT = 5
+DRONE_COUNT = 1
 
 USE_VLM = False
 
@@ -72,74 +73,74 @@ message_history = [
 
 
 
+# Ensure 'spawn' is set at the beginning as the start method for multiprocessing
+# This makes sure it will work on Windows
+if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
 
 
+# Directory to store pictures
+imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
+
+# Create directory if it does not exist
+if not os.path.exists(imgDir):
+    os.makedirs(imgDir)
 
 
+# Starts a new thread for each drone and handles the setup
+def setup_processes(drone_count):
+    manager = mp.Manager()
 
-async def parentController(drone_count):
-    """ Parent process to send commands and receive status updates from drones. """
-    manager = mp.Manager() # Manager to share data between processes
-
-
-    if USE_VLM:
-        print("Loading VLM...")
-        load_model(MODEL)
-    
-    
-    current_target_dictionary = manager.dict()  # Dictionary to store the current target waypoint of each drone
-    status_dictionary = manager.dict() # Dictionary to store status of each drone
-    target_found = mp.Value('b', False) # Global variable to stop the search loop when the target is found
-    searched_areas_dictionary = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
-    image_queue = manager.Queue()  # Queue to store images waiting to be processed
-
-    processes = []  # List to store process references for each drone
-
-
-
-    # DOE1 is a deer in front of the spawn area (for testing)
+    current_target_dictionary = manager.dict()
+    status_dictionary = manager.dict()
+    target_found = manager.Value("b", False)
+    searched_areas_dictionary = manager.dict()
+    image_queue = manager.Queue()
     waypoint_queue = []
+
+    # DOE1 is a deer in front of spawn
     heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
 
-    
-    # Create and start processes for each drone
-    for x in range(1):
+    processes = []
+    for x in range(drone_count):
         drone_name = str(x)
-        current_target_dictionary[drone_name] = None # an instance of the waypoint class
+        current_target_dictionary[drone_name] = None
         status_dictionary[drone_name] = "INITIALIZING"
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue))
+
+        p = mp.Process(target=sdc.singleDroneController, args=(
+            drone_name, current_target_dictionary, status_dictionary,
+            target_found, searched_areas_dictionary, image_queue, waypoint_queue))
         p.start()
         processes.append(p)
+
         print(f"Drone {drone_name} is initializing")
 
+    return processes, manager, current_target_dictionary, status_dictionary, target_found, image_queue, waypoint_queue
 
 
+# Main async function to handle the program flow
+async def parentController(drone_count):
 
-   
-    while not all(status == "WAITING" for status in status_dictionary.values()):       
-        print("Waiting for all drones to take off...")
-        # for drone_name in status_dictionary:
-        #     print(f"Drone {drone_name} status: {status_dictionary[drone_name]}")
-        time.sleep(5)
+    print("Starting the websocket server...")
+    # Start the WebSocket server as a background task
+    websocket_task = asyncio.create_task(start_websocket_server())
+
+    await asyncio.sleep(5) # give some time for the server to start
+
+    print("Initializing the drones...")
+
+    loop = asyncio.get_running_loop()
+    processes, manager, current_target_dictionary, status_dictionary, target_found, image_queue, waypoint_queue = await loop.run_in_executor(
+        None, setup_processes, drone_count
+    )
 
 
-    # Send the initial waypoints to the VLM
-    if USE_VLM:
-        message_history.append({
-            'role': 'user',
-            'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
-        })
-        response = chat(
-            messages = message_history,
-            model = MODEL,
-            format = VLMOutput.model_json_schema()
-        )
+    # Wait until all drones are in "WAITING" state
+    while not all(status == "WAITING" for status in status_dictionary.values()):
+        await asyncio.sleep(1)
     
-        print(response)
-        message = VLMOutput.model_validate_json(response.message.content)
-        print(message.assigned_target_dictionary)
 
-        time.sleep(60)
+
 
 
     start_time = time.time()
@@ -148,7 +149,7 @@ async def parentController(drone_count):
         async with websockets.connect(URI) as websocket:
 
             while not target_found.value:
-                
+
 
                 # only check drone status every 5 seconds
                 if time.time() - start_time > 5:
@@ -164,11 +165,8 @@ async def parentController(drone_count):
                                 print(f"No waypoints available. Requesting new waypoints from VLM model...")
                             
                                 # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
-                            
                     
                     start_time = time.time()
-
-
 
 
                 # check for images waiting to be processed
@@ -186,34 +184,14 @@ async def parentController(drone_count):
                         # TODO
 
 
+                await asyncio.sleep(1) # give some time between cycles
 
-                
-
-
-                time.sleep(1)  # Give some time between cycles
-        
     except KeyboardInterrupt:
         for p in processes:
             p.terminate()
 
-    # Wait for all processes to finish
     for p in processes:
         p.join()
 
-
-
-
-
-
-
 if __name__ == "__main__":
-    # directory to store pictures
-    imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
-
-    # create directory if it does not exist
-    if not os.path.exists(imgDir):
-        os.makedirs(imgDir)
-
-    mp.set_start_method('spawn')
-
     asyncio.run(parentController(DRONE_COUNT))
