@@ -13,6 +13,8 @@ from pydantic import BaseModel # type: ignore
 import base64
 import asyncio
 import websockets
+from queue import Queue
+import threading
 
 # project imports
 import local_config
@@ -25,6 +27,7 @@ from websocket.websocket_server import start
 MODEL = "llava:7b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 URI = "ws://localhost:8765" # websocket server URI
+UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from synchronously
 
 DRONE_COUNT = 5
 
@@ -71,9 +74,26 @@ message_history = [
 
 
 
+async def connect_websocket():
+    """Async function to connect to the websocket server"""
+    async with websockets.connect(URI) as websocket:
+        while True:
+            msg = await websocket.recv()
+            UI_DATA_QUEUE.put(msg)  # Store message for sync retrieval
+
+def start_websocket_client():
+    """Start the websocket client (on the simulation side) to connect to the server"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(connect_websocket())
 
 
 
+def fetch_websocket_data():
+    """Synchronous function to get data from the websocket queue from the UI"""
+    if not UI_DATA_QUEUE.empty():
+        return UI_DATA_QUEUE.get()
+    return None  # No new message
 
 
 
@@ -93,6 +113,7 @@ def parentController(drone_count):
     searched_areas_dictionary = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
     image_queue = manager.Queue()  # Queue to store images waiting to be processed
     waypoint_queue = []
+    
 
 
 
@@ -112,13 +133,18 @@ def parentController(drone_count):
         processes.append(p)
         print(f"Drone {drone_name} is initializing")
     
-    # Start the websocket server as a separate process
-    p = mp.Process(target=start)
-    p.start()
-    processes.append(p)
 
 
 
+
+    # Start the websocket server as a separate thread    
+    websocket_server_thread = threading.Thread(target=start, daemon=True)
+    websocket_server_thread.start()
+
+
+    # Start the websocket client as a separate thread (on the simulation side)
+    websocket_client_thread = threading.Thread(target=start_websocket_client, daemon=True)
+    websocket_client_thread.start()
 
    
     while not all(status == "WAITING" for status in status_dictionary.values()):       
@@ -148,52 +174,54 @@ def parentController(drone_count):
     start_time = time.time()
 
     try:
-        with websockets.connect(URI) as websocket:
+        while not target_found.value:
+            
+            # Fetch WebSocket messages (sync retrieval)
+            websocket_data = fetch_websocket_data()
+            if websocket_data:
+                print(f"Received UI WebSocket message: {websocket_data}")
 
-            while not target_found.value:
+            # only check drone status every 5 seconds
+            if time.time() - start_time > 5:
+
+                # assign waypoints to any waiting drones
+                for drone_name in status_dictionary:
+                    if status_dictionary[drone_name] == "WAITING":
+                        if len(waypoint_queue) > 0:
+                            next_waypoint = heapq.heappop(waypoint_queue)
+                            current_target_dictionary[drone_name] = next_waypoint
+                            print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
+                        else:
+                            print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                        
+                            # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
+                        
                 
-
-                # only check drone status every 5 seconds
-                if time.time() - start_time > 5:
-
-                    # assign waypoints to any waiting drones
-                    for drone_name in status_dictionary:
-                        if status_dictionary[drone_name] == "WAITING":
-                            if len(waypoint_queue) > 0:
-                                next_waypoint = heapq.heappop(waypoint_queue)
-                                current_target_dictionary[drone_name] = next_waypoint
-                                print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
-                            else:
-                                print(f"No waypoints available. Requesting new waypoints from VLM model...")
-                            
-                                # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
-                            
-                    
-                    start_time = time.time()
+                start_time = time.time()
 
 
 
 
-                # check for images waiting to be processed
-                if not image_queue.empty():
-                    image = image_queue.get() # base64 image
-                    print(f"Received image from Drone {image.drone_id}")
+            # check for images waiting to be processed
+            if not image_queue.empty():
+                image = image_queue.get() # base64 image
+                print(f"Received image from Drone {image.drone_id}")
 
-                    # reconstruct the image from the base64 string
-                    image_path = os.path.join(imgDir, f"image_{image.drone_id}.png")
-                    reconstruct_image_from_base64(image.image, image_path)
+                # reconstruct the image from the base64 string
+                image_path = os.path.join(imgDir, f"image_{image.drone_id}.png")
+                reconstruct_image_from_base64(image.image, image_path)
 
-                    # send the image to the VLM model for analysis
-                    if USE_VLM:
-                        print("Not implemented yet")
-                        # TODO
-
-
-
-                
+                # send the image to the VLM model for analysis
+                if USE_VLM:
+                    print("Not implemented yet")
+                    # TODO
 
 
-                time.sleep(1)  # Give some time between cycles
+
+            
+
+
+            time.sleep(1)  # Give some time between cycles
         
     except KeyboardInterrupt:
         for p in processes:
