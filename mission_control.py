@@ -31,7 +31,7 @@ UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from synchron
 
 DRONE_COUNT = 5
 
-USE_VLM = True
+USE_VLM = False
 
 
 
@@ -260,7 +260,7 @@ def parentController(drone_count):
                 print(f"Received image from Drone {image.drone_id}")
 
                 # reconstruct the image from the base64 string
-                image_path = os.path.join(imgDir, f"image_{image.drone_id}.png")
+                image_path = os.path.join(imgDir, f"reconstructed_image_{image.drone_id}.png")
                 reconstruct_image_from_base64(image.image, image_path)
 
                 # send the image to the VLM model for analysis
