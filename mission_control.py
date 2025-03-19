@@ -207,49 +207,57 @@ def parentController(drone_count):
                     waypoint = Waypoint(json_data["WaypointID"], json_data["X"] / 100, json_data["Y"] / 100, json_data["Z"] / 100, json_data["Priority"])
                     heapq.heappush(waypoint_queue, waypoint)
                     print(f"Added waypoint {waypoint.name} to the queue")
-
-
-            # only check drone status every 5 seconds
-            if time.time() - start_time > 5:
-
-                # assign waypoints to any waiting drones
-                for drone_name in status_dictionary:
-                    if status_dictionary[drone_name] == "WAITING":
-                        # if USE_VLM and len(waypoint_queue) > 0:
-                            # # ask the VLM model for the next waypoint to be assigned
-                            # message_history.append({
-                            #     'role': 'user',
-                            #     'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
-                            # })
-                            # response = chat(
-                            #     messages = message_history,
-                            #     model = MODEL,
-                            #     format = VLMOutput.model_json_schema()
-                            # )
-                        
-                            # print(response)
-                            # message = VLMOutput.model_validate_json(response.message.content)
-                            # print(message.assigned_target_dictionary)
-
-                            # assigned_target = message.assigned_target_dictionary[drone_name]
-                            # current_target_dictionary[drone_name] = assigned_target
-                            # print(f"Assigned waypoint {assigned_target} to Drone {drone_name}")
-                            # print("Not implemented yet")
+                elif json_data["MessageType"] == "DeleteWaypoint":
+                    # delete the waypoint from the queue
+                    for i, wp in enumerate(waypoint_queue):
+                        if wp.name == json_data["WaypointID"]:
+                            del waypoint_queue[i]
+                            print(f"Deleted waypoint {wp.name} from the queue")
+                            break
+                    # fix the heap
+                    heapq.heapify(waypoint_queue)
+                else:
+                    print("Unexpected message type")
 
 
 
+            # assign waypoints to any waiting drones
+            for drone_name in status_dictionary:
+                if status_dictionary[drone_name] == "WAITING":
+                    # if USE_VLM and len(waypoint_queue) > 0:
+                        # # ask the VLM model for the next waypoint to be assigned
+                        # message_history.append({
+                        #     'role': 'user',
+                        #     'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
+                        # })
+                        # response = chat(
+                        #     messages = message_history,
+                        #     model = MODEL,
+                        #     format = VLMOutput.model_json_schema()
+                        # )
+                    
+                        # print(response)
+                        # message = VLMOutput.model_validate_json(response.message.content)
+                        # print(message.assigned_target_dictionary)
 
-                        if len(waypoint_queue) > 0:
-                            next_waypoint = heapq.heappop(waypoint_queue)
-                            current_target_dictionary[drone_name] = next_waypoint
-                            print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
-                        else:
-                            print(f"No waypoints available. Requesting new waypoints from VLM model...")
-                        
-                            # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
+                        # assigned_target = message.assigned_target_dictionary[drone_name]
+                        # current_target_dictionary[drone_name] = assigned_target
+                        # print(f"Assigned waypoint {assigned_target} to Drone {drone_name}")
+                        # print("Not implemented yet")
+
+
+
+
+                    if len(waypoint_queue) > 0:
+                        next_waypoint = heapq.heappop(waypoint_queue)
+                        current_target_dictionary[drone_name] = next_waypoint
+                        print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
+                    else:
+                        print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                    
+                        # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
                         
                 
-                start_time = time.time()
 
 
 
@@ -259,7 +267,7 @@ def parentController(drone_count):
                 image = image_queue.get() # base64 image
                 print(f"Received image from Drone {image.drone_id}")
 
-                # reconstruct the image from the base64 string
+                # reconstruct the image from the base64 string || TODO: Don't save the image to disk here, but rather from the drone
                 image_path = os.path.join(imgDir, f"drone_{image.drone_id}", f"waypoint_{image.waypoint_name}_{image.image_type}.png")
                 reconstruct_image_from_base64(image.image, image_path)
 
