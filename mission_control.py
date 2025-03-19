@@ -260,8 +260,11 @@ def parentController(drone_count):
                 print(f"Received image from Drone {image.drone_id}")
 
                 # reconstruct the image from the base64 string
-                image_path = os.path.join(imgDir, f"reconstructed_image_{image.drone_id}.png")
+                image_path = os.path.join(imgDir, f"drone_{image.drone_id}", f"waypoint_{image.waypoint_name}_{image.image_type}.png")
                 reconstruct_image_from_base64(image.image, image_path)
+
+
+
 
                 # send the image to the VLM model for analysis
                 if USE_VLM:
@@ -296,6 +299,13 @@ if __name__ == "__main__":
     # create directory if it does not exist
     if not os.path.exists(imgDir):
         os.makedirs(imgDir)
+
+
+    # create an image sub directory for each drone
+    for i in range(DRONE_COUNT):
+        droneDir = os.path.join(imgDir, f"drone_{i}")
+        if not os.path.exists(droneDir):
+            os.makedirs(droneDir)
 
     mp.set_start_method('spawn')
 

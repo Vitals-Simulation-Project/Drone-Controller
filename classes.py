@@ -21,11 +21,13 @@ class Waypoint:
 # image type can be "airsim.ImageType.Scene" or "airsim.ImageType.Infrared"
 # image is stored as base64 encoded string
 # drone_id is the id of the drone that took the image
+# waypoint is the name of the waypoint where the image was taken
 class Image:
-    def __init__(self, drone_id, image_type, image):
+    def __init__(self, drone_id, image_type, image, waypoint_name):
         self.drone_id = drone_id
         self.image_type = image_type
         self.image = image
+        self.waypoint_name = waypoint_name
     
 
 

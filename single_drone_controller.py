@@ -149,7 +149,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             # Take a picture
             base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
-            image_queue.put(Image(drone_name, airsim.ImageType.Scene, base64_picture))
+            image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 
