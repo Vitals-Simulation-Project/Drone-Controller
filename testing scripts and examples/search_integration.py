@@ -85,7 +85,7 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
     
 def create_mask():
     infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
-
+    depthperspective = take_forward_picture(drone, airsim.ImageType.DepthPerspective)
     img = infared_image
     
     img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
@@ -106,7 +106,7 @@ def create_mask():
     try:     
         horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
         print("going into calc")
-        calculateDistance_angle(mask)
+        calculateDistance_angle(mask,depthperspective)
         return True
     except IndexError:
         print("continue")
@@ -168,12 +168,12 @@ def MoveToGPSAsyncCollsion(self, latitude, longitude, altitude, velocity, timeou
             #print("moving up")
     self.hoverAsync
 
-def calculateDistance_angle(mask):
+def calculateDistance_angle(mask,depthPerspective):
     client.hoverAsync()
     #print("im here 1")
-    responses = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False),airsim.ImageRequest("front_center", airsim.ImageType.Infrared,False,False)])
+    #responses = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False),airsim.ImageRequest("front_center", airsim.ImageType.Infrared,False,False)])
     #TEST_response= client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name='0') ## throws a fit if i do them both in one call
-    depthPerspective = responses[0]
+    #depthPerspective = responses[0]
 
     #depth = responses[0]
     #print("im here 2")
@@ -291,7 +291,7 @@ def CordCalulcation(angle, distance,clockwise):
         yaw = yaw - angle
     
     
-    client.rotateToYawAsync(200).join() ## correct angle is 200
+    client.rotateToYawAsync(yaw).join() ## correct angle is 200
     time.sleep(3)
     # if (yaw > 180 ):
     #     temp = yaw - 180
