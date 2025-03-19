@@ -158,12 +158,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_target_dictionary[drone_name] = None
             print(f"Drone {drone_name} finished searching {waypoint_name}")
             searched_areas_dictionary[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
-            status_dictionary[drone_name] = "WAITING"
+            status_dictionary[drone_name] = "IDLE"
 
 
         else:
             print(f"Drone {drone_name} is waiting for commands.")
-            status_dictionary[drone_name] = "WAITING"
+            status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 
 

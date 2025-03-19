@@ -140,6 +140,23 @@ def fetch_websocket_data():
 def parentController(drone_count):
     manager = mp.Manager() # Manager to share data between processes
 
+    # Start the websocket server as a separate thread    
+    websocket_server_thread = threading.Thread(target=start_websocket_server, daemon=True)
+    websocket_server_thread.start()
+
+
+    # Start the websocket client as a separate thread (on the simulation side)
+    websocket_client_thread = threading.Thread(target=start_websocket_client, daemon=True)
+    websocket_client_thread.start()
+
+    # update drone states to start off
+    for i in range(drone_count):
+        status_data = {
+            "MessageType": "UpdateDroneState",
+            "DroneID": int(i),
+            "State": "INACTIVE"
+        }
+        send_to_ui(json.dumps(status_data))
 
     if USE_VLM:
         print("Loading VLM...")
@@ -176,14 +193,7 @@ def parentController(drone_count):
 
 
 
-    # Start the websocket server as a separate thread    
-    websocket_server_thread = threading.Thread(target=start_websocket_server, daemon=True)
-    websocket_server_thread.start()
 
-
-    # Start the websocket client as a separate thread (on the simulation side)
-    websocket_client_thread = threading.Thread(target=start_websocket_client, daemon=True)
-    websocket_client_thread.start()
 
    
     while not all(status == "IDLE" for status in status_dictionary.values()):       
