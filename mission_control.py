@@ -22,12 +22,16 @@ import single_drone_controller as sdc
 from model_files.pull_model import load_model
 from classes import Waypoint, Image, VLMOutput
 from helper_functions import reconstruct_image_from_base64
-from websocket.websocket_server import start_websocket_server
+from websocket.websocket_server import start_websocket_server, send
 
 MODEL = "gemma3:4b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 URI = "ws://localhost:8765" # websocket server URI
-UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from synchronously
+RECEIVED_UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from synchronously
+SEND_UI_DATA_QUEUE = Queue() # Queue to store data to be sent to the UI
+
+WEBSOCKET_CLIENT = None # Global websocket client 
+
 
 DRONE_COUNT = 5
 
@@ -94,10 +98,26 @@ message_history = [
 
 async def connect_websocket():
     """Async function to connect to the websocket server"""
+    global WEBSOCKET_CLIENT
     async with websockets.connect(URI) as websocket:
+        WEBSOCKET_CLIENT = websocket
+        asyncio.create_task(send_message())
         while True:
             msg = await websocket.recv()
-            UI_DATA_QUEUE.put(msg)  # Store message for sync retrieval
+            RECEIVED_UI_DATA_QUEUE.put(msg)  # Store message for sync retrieval
+
+async def send_message():
+    """Async function to send a message to the websocket server"""
+    while True:
+        try:
+            msg = SEND_UI_DATA_QUEUE.get_nowait()
+            await WEBSOCKET_CLIENT.send(msg)
+        except:
+            await asyncio.sleep(1)
+
+def send_to_ui(message):
+    """Function to send a message to the UI via the websocket server"""
+    SEND_UI_DATA_QUEUE.put(message)
             
 
 def start_websocket_client():
@@ -110,8 +130,8 @@ def start_websocket_client():
 
 def fetch_websocket_data():
     """Synchronous function to get data from the websocket queue from the UI"""
-    if not UI_DATA_QUEUE.empty():
-        return UI_DATA_QUEUE.get()
+    if not RECEIVED_UI_DATA_QUEUE.empty():
+        return RECEIVED_UI_DATA_QUEUE.get()
     return None
 
 
@@ -166,7 +186,7 @@ def parentController(drone_count):
     websocket_client_thread.start()
 
    
-    while not all(status == "WAITING" for status in status_dictionary.values()):       
+    while not all(status == "IDLE" for status in status_dictionary.values()):       
         print("Waiting for all drones to take off...")
         time.sleep(5)
 
@@ -223,7 +243,7 @@ def parentController(drone_count):
 
             # assign waypoints to any waiting drones
             for drone_name in status_dictionary:
-                if status_dictionary[drone_name] == "WAITING":
+                if status_dictionary[drone_name] == "IDLE":
                     # if USE_VLM and len(waypoint_queue) > 0:
                         # # ask the VLM model for the next waypoint to be assigned
                         # message_history.append({
@@ -280,6 +300,31 @@ def parentController(drone_count):
                     # TODO
 
 
+
+            # send updates to the websocket server (UI)
+            # update drone targets
+            for drone_name in current_target_dictionary:
+                target = current_target_dictionary[drone_name]
+                target_data = {
+                    "MessageType": "UpdateDroneTarget",
+                    "DroneID": int(drone_name),
+                    "WaypointID": target.name if target else None
+                }
+                #print(f"Sending target update for Drone {drone_name} to UI")
+                send_to_ui(json.dumps(target_data))
+
+
+
+            # update drone states
+            for drone_name in status_dictionary:
+                status = status_dictionary[drone_name]
+                status_data = {
+                    "MessageType": "UpdateDroneState",
+                    "DroneID": int(drone_name),
+                    "State": status
+                }
+                #print(f"Sending status update for Drone {drone_name} to UI")
+                send_to_ui(json.dumps(status_data))
 
             
 
