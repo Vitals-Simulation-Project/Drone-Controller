@@ -24,53 +24,71 @@ from classes import Waypoint, Image, VLMOutput
 from helper_functions import reconstruct_image_from_base64
 from websocket.websocket_server import start_websocket_server
 
-MODEL = "llava:7b" # model from Ollama
+MODEL = "gemma3:4b" # model from Ollama
 URL = "http://localhost:11434/api/chat" 
 URI = "ws://localhost:8765" # websocket server URI
 UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from synchronously
 
 DRONE_COUNT = 5
 
-USE_VLM = False
+USE_VLM = True
 
 
 
 # message history, starts off with explaining what the model 
 # will be doing in the search and rescue mission
+# message_history = [
+#     {
+#         'role': 'user',
+#         'content':  
+#             "You are a drone operator conducting a simulated search and rescue mission.\n" +
+#             f"You have {DRONE_COUNT} drone(s) at your disposal to locate a missing person.\n" +
+#             "Your primary task is to create and assign waypoints for the drones, analyze captured images, and determine the target's location."
+#         ,
+#     },
+#     {
+#         'role': 'assistant',
+#         'content': "Understood. I am ready to assist in the search and rescue mission.",
+#     },
+#     {
+#         'role': 'user',
+#         'content': (
+#             "The search process follows these steps:\n"
+#             "1. You will receive a list of waypoints with their locations, along with the current locations of the drones.\n"
+#             "2. Using this information, generate a target waypoint for each drone, utilizing the distance they are away and the waypoint's priority.\n"
+#             "3. The drones will travel to their individual waypoint and capture infrared (IR) images to detect potential heat signatures.\n"
+#             "4. If a heat signature is detected, the drones will take regular images to visually confirm the target.\n"
+#             "5. The drones will transmit regular images to you for analysis.\n"
+#             "6. Based on your analysis, determine whether the detected heat signature matches the missing person.\n"
+#             "7. If the target is confirmed, the mission is complete. If not, repeat the process until the target is found. You will need to assign a new waypoint if a drone has finished searching its current target.\n"
+#             "8. You may be asked to generate additional waypoints if all waypoints have been searched. You will be provided with a list of already searched locations."
+#             "Your objective is to accurately locate and confirm the missing person’s position using drone imagery.\n"
+#             "Now, let's begin by generating the initial target waypoints for each drone."
+#         ),
+#     },
+#     {
+#         'role': 'assistant',
+#         'content': "Please provide the initial waypoint list and wait while I generate the target waypoints for each drone.",
+#     }
+# ]
+
 message_history = [
     {
         'role': 'user',
-        'content':  
-            "You are a drone operator conducting a simulated search and rescue mission.\n" +
-            f"You have {DRONE_COUNT} drone(s) at your disposal to locate a missing person.\n" +
+        'content': (  
+            "You are a drone operator conducting a simulated search and rescue mission.\n" 
             "Your primary task is to create and assign waypoints for the drones, analyze captured images, and determine the target's location."
-        ,
+        )
     },
     {
         'role': 'assistant',
-        'content': "Understood. I am ready to assist in the search and rescue mission.",
-    },
-    {
-        'role': 'user',
         'content': (
-            "The search process follows these steps:\n"
-            "1. You will receive a list of waypoints with their locations, along with the current locations of the drones.\n"
-            "2. Using this information, generate a target waypoint for each drone, utilizing the distance they are away and the waypoint's priority.\n"
-            "3. The drones will travel to their individual waypoint and capture infrared (IR) images to detect potential heat signatures.\n"
-            "4. If a heat signature is detected, the drones will take regular images to visually confirm the target.\n"
-            "5. The drones will transmit regular images to you for analysis.\n"
-            "6. Based on your analysis, determine whether the detected heat signature matches the missing person.\n"
-            "7. If the target is confirmed, the mission is complete. If not, repeat the process until the target is found. You will need to assign a new waypoint if a drone has finished searching its current target.\n"
-            "8. You may be asked to generate additional waypoints if all waypoints have been searched. You will be provided with a list of already searched locations."
-            "Your objective is to accurately locate and confirm the missing person’s position using drone imagery.\n"
-            "Now, let's begin by generating the initial target waypoints for each drone."
-        ),
-    },
-    {
-        'role': 'assistant',
-        'content': "Please provide the initial waypoint list and wait while I generate the target waypoints for each drone.",
+            "Understood. I am ready to assist in the search and rescue mission.\n"
+            "Please provide the initial waypoint list and wait while I generate the target waypoints for each drone."            
+        )
     }
 ]
+
 
 
 
@@ -108,12 +126,12 @@ def parentController(drone_count):
         load_model(MODEL)
     
     
-    current_target_dictionary = manager.dict()  # Dictionary to store the current target waypoint of each drone
-    status_dictionary = manager.dict() # Dictionary to store status of each drone
-    target_found = mp.Value('b', False) # Global variable to stop the search loop when the target is found
-    searched_areas_dictionary = manager.dict() # Dictionary mapping waypoint names to their locations that have been searched already
-    image_queue = manager.Queue()  # Queue to store images waiting to be processed
-    waypoint_queue = []
+    current_target_dictionary = manager.dict()   # Dictionary to store the current target waypoint of each drone
+    status_dictionary = manager.dict()           # Dictionary to store status of each drone
+    target_found = mp.Value('b', False)          # Global variable to stop the search loop when the target is found
+    searched_areas_dictionary = manager.dict()   # Dictionary mapping waypoint names to their locations that have been searched already
+    image_queue = manager.Queue()                # Queue to store images waiting to be processed
+    waypoint_queue = []                          # Priority queue to store waypoints
     
 
 
@@ -154,22 +172,22 @@ def parentController(drone_count):
 
 
     # Send the initial waypoints to the VLM
-    if USE_VLM:
-        message_history.append({
-            'role': 'user',
-            'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
-        })
-        response = chat(
-            messages = message_history,
-            model = MODEL,
-            format = VLMOutput.model_json_schema()
-        )
+    # if USE_VLM:
+    #     message_history.append({
+    #         'role': 'user',
+    #         'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
+    #     })
+    #     response = chat(
+    #         messages = message_history,
+    #         model = MODEL,
+    #         format = VLMOutput.model_json_schema()
+    #     )
     
-        print(response)
-        message = VLMOutput.model_validate_json(response.message.content)
-        print(message.assigned_target_dictionary)
+    #     print(response)
+    #     message = VLMOutput.model_validate_json(response.message.content)
+    #     print(message.assigned_target_dictionary)
 
-        time.sleep(60)
+    #     time.sleep(60)
 
 
     start_time = time.time()
@@ -197,6 +215,30 @@ def parentController(drone_count):
                 # assign waypoints to any waiting drones
                 for drone_name in status_dictionary:
                     if status_dictionary[drone_name] == "WAITING":
+                        # if USE_VLM and len(waypoint_queue) > 0:
+                            # # ask the VLM model for the next waypoint to be assigned
+                            # message_history.append({
+                            #     'role': 'user',
+                            #     'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
+                            # })
+                            # response = chat(
+                            #     messages = message_history,
+                            #     model = MODEL,
+                            #     format = VLMOutput.model_json_schema()
+                            # )
+                        
+                            # print(response)
+                            # message = VLMOutput.model_validate_json(response.message.content)
+                            # print(message.assigned_target_dictionary)
+
+                            # assigned_target = message.assigned_target_dictionary[drone_name]
+                            # current_target_dictionary[drone_name] = assigned_target
+                            # print(f"Assigned waypoint {assigned_target} to Drone {drone_name}")
+                            # print("Not implemented yet")
+
+
+
+
                         if len(waypoint_queue) > 0:
                             next_waypoint = heapq.heappop(waypoint_queue)
                             current_target_dictionary[drone_name] = next_waypoint
