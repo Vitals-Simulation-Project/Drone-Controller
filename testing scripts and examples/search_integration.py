@@ -27,19 +27,19 @@ imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 if not os.path.exists(imgDir):
     os.makedirs(imgDir)
 
-def take_forward_picture(drone_name, image_type):
-    #camera_name = "front-" + drone_name
-    camera_name = "front_center"
-    print(f"Taking picture from {camera_name}")
-    response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
+# def take_forward_picture(drone_name, image_type):
+#     #camera_name = "front-" + drone_name
+#     camera_name = "front_center"
+#     print(f"Taking picture from {camera_name}")
+#     response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
     
-    filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
+#     filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
 
-    img1d = np.frombuffer(response, dtype=np.uint8)
-    img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+#     img1d = np.frombuffer(response, dtype=np.uint8)
+#     img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
 
-    cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
-    return response
+#     cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png
+#     return response
 
 def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
     global running
@@ -71,42 +71,30 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
         
         if (create_mask() == True):
             return
-   # mask = create_mask()
-    # try:     
-    #     horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
-    #     print("going into calc")
-    #     calculateDistance_angle( mask)
-    #     return
-    # except IndexError:
-    #     print("continue")
-    # except ValueError:
-    #     #create_mask()
-    #     print("fuck yall")
     
 def create_mask():
-    infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
-    depthperspective = take_forward_picture(drone, airsim.ImageType.DepthPerspective)
-    img = infared_image
+    #infared_image = take_forward_picture(drone, airsim.ImageType.Infrared)
+    #depthperspective = take_forward_picture(drone, airsim.ImageType.DepthPerspective)
+   # responses = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False),airsim.ImageRequest("front_center", airsim.ImageType.Infrared,False,False)])
+    #img = infared_image
+    
+    img = client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name=drone)
+    depth = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False)])
     
     img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
     img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
     hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-    #print("im here 5")
-
-    ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
 
     lower = np.array([0,0,0], dtype = "uint8")
     upper = np.array([192,192,192], dtype = "uint8")
 
     mask = cv2.inRange(hsv, lower, upper)   
-    #print("im here 6")
     cv2.imshow("Mask",mask)
-    #cv2.imshow("img",img1d)
     cv2.waitKey(0)
     try:     
-        horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
+        horizontal = np.argwhere(mask)[5][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
         print("going into calc")
-        calculateDistance_angle(mask,depthperspective)
+        calculateDistance_angle(mask,depth[0])
         return True
     except IndexError:
         print("continue")
@@ -119,7 +107,7 @@ def create_mask():
     
 def confirm_target_search(client, center_x, center_y, side_length, altitude, speed):
     global running
-
+    
     half_side = side_length / 2  
     state = client.getMultirotorState()
     q = state.kinematics_estimated.orientation
@@ -145,7 +133,7 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
         time.sleep(3)
         client.rotateToYawAsync(curyaw+135).join()
 
-        take_forward_picture(drone, airsim.ImageType.Scene)
+        #take_forward_picture(drone, airsim.ImageType.Scene)
 
 def create_waypoint():
     state = client.getMultirotorState()
@@ -153,6 +141,7 @@ def create_waypoint():
     
     client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-15 ,10, vehicle_name= drone).join()
     client.moveToPositionAsync(currentposition.x_val+200,currentposition.y_val-12 , currentposition.z_val-15 ,20, vehicle_name= drone).join() 
+    #client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-5,10, vehicle_name= drone).join()
     currentposition = state.kinematics_estimated.position
     return currentposition
 
@@ -175,75 +164,47 @@ def calculateDistance_angle(mask,depthPerspective):
     #TEST_response= client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name='0') ## throws a fit if i do them both in one call
     #depthPerspective = responses[0]
 
-    #depth = responses[0]
-    #print("im here 2")
+   
     
     depth_img_in_meters = airsim.list_to_2d_float_array(depthPerspective.image_data_float, depthPerspective.width, depthPerspective.height) 
-    #print("im here 3")
+    
     depth_img_in_meters = depth_img_in_meters.reshape(depthPerspective.height, depthPerspective.width, 1)
-    #print("height")
-    #print( depthPerspective.height)
-    #print("width" )
-    #print(depthPerspective.width)
+ 
     depth_8bit_lerped = np.interp(depth_img_in_meters, (0, 100), (0, 255))
 
     #print(responses[0].width) #256
-    #print("width^^^^^")
   
-    #img = responses[1]
-    #img = infared
-    #print("im here 3")
-    # img = infared
   
-    # img1d = np.frombuffer(img, dtype=np.uint8) ## breaking here rn 
-    # img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
-    # hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-    # print("im here 5")
-
-    # ##img.resize(256,144) ## width , height ## this is breaking after the changes/ cant do it / might need this when integrating everyones code
-
-    # lower = np.array([0,0,0], dtype = "uint8")
-    # upper = np.array([192,192,192], dtype = "uint8")
-
-    # mask = cv2.inRange(hsv, lower, upper)
-    # #print("im here 6")
-    # cv2.imshow("Mask",mask)
-    # #cv2.imshow("img",img1d)
-    # cv2.waitKey(0)
-    # horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
-    ##mask.resize(256,288)
-    
-    ##print("im here 7")
 
     height= client.getDistanceSensorData(distance_sensor_name='Distance').distance
-    ##print("im here 3")
-    perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle # was 256 before david :( 
+    print(height)
+    print("height^^^^")
   
-    horizontal = np.argwhere(mask)[0][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
+    perpixel = 90/256 ## might  be wrong there is a lot of things to check but in theroy if everything is right it works #half of the big angle
+  
+    horizontal = np.argwhere(mask)[5][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
     
-    if(horizontal >= (256/2)): # was 256 before david :(
+    if(horizontal >= (256/2)):
         print("right")
         clockwise = True
-    elif(horizontal<(256/2)): # was 256 before david :(
+    elif(horizontal<(256/2)): 
         print("left")
         clockwise = False   
-    vert = np.argwhere(mask)[0][0]
+    vert = np.argwhere(mask)[5][0]
     distance = depth_img_in_meters[vert][horizontal][0] ## could be back wards
 
-    print(depth_img_in_meters[vert][horizontal][0])
-    print("depth 0")
-    print(depth_img_in_meters[vert][horizontal][1])
-    print("depth 1")
+    #print(depth_img_in_meters[vert][horizontal][0])
+    #print("depth 0")
+    #print(depth_img_in_meters[vert][horizontal][1])
+    #print("depth 1")
     #print(horizontal)
     #print("horizontal ^^^")
     #print(vert)
     #print("vert ^^^^")
     ##print(height)
-    #try:
-    calculations = math.sqrt(distance**2 - height**2) ## need a catch for this i think 
-    #except ValueError:
-       # print("math mo fucking domain")
-        #return
+    calculations = math.sqrt(distance**2 - height**2) 
+
+    
     horizontalangle = perpixel * horizontal
     #time.sleep(30)
     print(horizontalangle, calculations, clockwise)
@@ -286,9 +247,14 @@ def CordCalulcation(angle, distance,clockwise):
     print(yaw)
     print("yaw^^^")
     if (clockwise == True):
+        angle = abs ( 45 - angle)
         yaw = yaw + angle
     elif(clockwise == False):
+        angle = abs(angle -45)
         yaw = yaw - angle
+    
+    print(angle)
+    print("angles ^^^")
     
     
     client.rotateToYawAsync(yaw).join() ## correct angle is 200
@@ -333,10 +299,13 @@ def CordCalulcation(angle, distance,clockwise):
     #return newX,newY, currentposition.z_val
 
 try:
+    state = client.getMultirotorState()
+    currentposition = state.kinematics_estimated.position
     create_waypoint() 
     
     time.sleep(3)
     waypoint_search(client, 230, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # Change to the waypoint given
+    #waypoint_search(client, currentposition.x_val, currentposition.y_val, waypoint_side_length, waypoint_altitude, waypoint_speed) # Change to the waypoint given
     # state = client.getMultirotorState()
     # currentposition = state.kinematics_estimated.position
     # client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-15 ,10, vehicle_name= drone).join()
