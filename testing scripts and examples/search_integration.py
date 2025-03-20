@@ -89,8 +89,8 @@ def create_mask():
     upper = np.array([192,192,192], dtype = "uint8")
 
     mask = cv2.inRange(hsv, lower, upper)   
-    cv2.imshow("Mask",mask)
-    cv2.waitKey(0)
+    #cv2.imshow("Mask",mask)
+    #cv2.waitKey(0)
     try:     
         horizontal = np.argwhere(mask)[5][1] ## if its not working this 0 is a 1 # need error handling here if there is nothing
         print("going into calc")
@@ -269,8 +269,8 @@ def CordCalulcation(angle, distance,clockwise):
     #     yaw = abs(180 - temp)
     #     #yaw = yaw + 90
     #     #yaw = abs(yaw)
-    currentposition = state.kinematics_estimated.position
-    print(yaw)
+    #currentposition = state.kinematics_estimated.position
+    #print(yaw)
     # if(yaw >0  and yaw <= 90 ):
     #     print("quad 1")
     #     newY= currentposition.y_val + math.sin(math.radians(angle)) * distance
@@ -287,14 +287,20 @@ def CordCalulcation(angle, distance,clockwise):
     #     print("quad 4")
     #     newY= currentposition.y_val -math.sin(math.radians(angle)) * distance
     #     newX= currentposition.x_val + (math.cos(math.radians(angle)) * distance )
-    newY= currentposition.y_val + (math.sin(math.radians(yaw)) * distance)
-    newX= currentposition.x_val + (math.cos(math.radians(yaw)) * distance )
+    # newY= currentposition.y_val + (math.sin(math.radians(yaw)) * distance)
+    # newX= currentposition.x_val + (math.cos(math.radians(yaw)) * distance)
     
+    # currentposition = state.kinematics_estimated.position
+    # print (currentposition)
+    # print(newX,newY)
+    client.moveByVelocityBodyFrameAsync(5,0,0,distance/5).join()
+    time.sleep(1)
+    print("boopity  bop")
     currentposition = state.kinematics_estimated.position
-    print (currentposition)
-    print(newX,newY)
+    print(currentposition)
+    time.sleep(1)
     print("we got all the way down here!!!!!")
-    confirm_target_search(client, newX, newY, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
+    confirm_target_search(client, currentposition.x_val, currentposition.y_val, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
     
     #return newX,newY, currentposition.z_val
 
