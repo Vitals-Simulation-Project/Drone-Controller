@@ -63,9 +63,10 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
-        roll , pitch, yaw = to_eularian_angles(q)
-        curyaw=yaw
-        client.rotateToYawAsync(curyaw+135).join()
+        # roll , pitch, yaw = to_eularian_angles(q)
+        # curyaw=yaw
+        # client.rotateToYawAsync(curyaw+135).join()
+        client.rotateToYawAsync(get_yaw_angle_to_target(client,center_x,center_y)).join()
         client.hoverAsync()
         time.sleep(3)
         
@@ -133,9 +134,7 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
         # client.rotateToYawAsync(curyaw+135).join()
         #client.rotateToYawAsync((math.tan(math.degrees((center_y)/(center_x))))).join()
 
-        client.rotateToYawAsync(get_yaw_angle_to_target(client,center_x,center_y)).join() 
-
-        
+        client.rotateToYawAsync(get_yaw_angle_to_target(client,center_x,center_y)).join()  
         client.hoverAsync()
         time.sleep(3)
         
