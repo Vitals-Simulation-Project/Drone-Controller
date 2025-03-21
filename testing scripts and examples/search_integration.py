@@ -18,7 +18,7 @@ waypoint_speed = 8                 # Speed (m/s)
 
 confirm_target_altitude = -10      # Fixed altitude (negative for AirSim)
 confirm_target_side_length = 10    # Square size
-confirm_target_speed = 8           # Speed (m/s)
+confirm_target_speed = 6           # Speed (m/s)
 
 drone = "0"                        # Drone
 
@@ -67,7 +67,7 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
         curyaw=yaw
         client.rotateToYawAsync(curyaw+135).join()
         client.hoverAsync()
-        time.sleep(5)
+        time.sleep(3)
         
         if (create_mask() == True):
             return
@@ -110,9 +110,9 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
     
     half_side = side_length / 2  
     state = client.getMultirotorState()
-    q = state.kinematics_estimated.orientation
-    roll , pitch, yaw = to_eularian_angles(q)
-    curyaw=yaw
+    #q = state.kinematics_estimated.orientation
+    #roll , pitch, yaw = to_eularian_angles(q)
+    #curyaw=get_yaw_angle_to_target(client,center_x,center_y)
 
     # Waypoints for target to be centered
     square_corners = [
@@ -128,12 +128,33 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0)  
         ).join()
+        #roll , pitch, yaw = to_eularian_angles(q)
+        #curyaw=yaw
+        # client.rotateToYawAsync(curyaw+135).join()
+        #client.rotateToYawAsync((math.tan(math.degrees((center_y)/(center_x))))).join()
 
-        # Delay for stabilization
+        client.rotateToYawAsync(get_yaw_angle_to_target(client,center_x,center_y)).join() 
+
+        
+        client.hoverAsync()
         time.sleep(3)
-        client.rotateToYawAsync(curyaw+135).join()
-
+        
         #take_forward_picture(drone, airsim.ImageType.Scene)
+def get_yaw_angle_to_target(client, x,y):
+    drone_state = client.getMultirotorState()
+    drone_position = drone_state.kinematics_estimated.position
+
+    dx = x - drone_position.x_val
+    dy = y - drone_position.y_val
+
+    yaw = math.atan2(dy, dx)
+    yaw_deg = math.degrees(yaw) % 360
+
+    # Drone tilt
+    #pitch = -90     # Downward tilt
+   # roll = 45       # Sideways tilt
+
+    return yaw_deg
 
 def create_waypoint():
     state = client.getMultirotorState()
@@ -293,13 +314,19 @@ def CordCalulcation(angle, distance,clockwise):
     # currentposition = state.kinematics_estimated.position
     # print (currentposition)
     # print(newX,newY)
+    state = client.getMultirotorState()
+    currentposition = state.kinematics_estimated.position
+    print(currentposition)
     client.moveByVelocityBodyFrameAsync(5,0,0,distance/5).join()
-    time.sleep(1)
+    #time.sleep(distance/5)
     print("boopity  bop")
+    state = client.getMultirotorState()
     currentposition = state.kinematics_estimated.position
     print(currentposition)
     time.sleep(1)
+
     print("we got all the way down here!!!!!")
+   
     confirm_target_search(client, currentposition.x_val, currentposition.y_val, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
     
     #return newX,newY, currentposition.z_val
