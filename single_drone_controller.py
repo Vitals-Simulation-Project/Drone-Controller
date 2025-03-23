@@ -8,6 +8,7 @@ import cv2
 import local_config
 import base64
 import heapq
+import asyncio
 
 from classes import Image
 from helper_functions import unreal_to_gps
@@ -90,7 +91,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
     while not target_found.value:
-        original_target = current_target = current_target_dictionary[drone_name]
+        current_target = current_target_dictionary[drone_name]
 
         if current_target is not None:
             waypoint_name = current_target.name
@@ -108,14 +109,14 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             status_dictionary[drone_name] = "MOVING"
 
             while True:
-                if current_target_dictionary[drone_name] != original_target:
-                    print(f"Drone {drone_name} received a new target while moving to {waypoint_name}")
-                    # interrupt movement with hover
-                    client.hoverAsync().join()
+                # if current_target_dictionary[drone_name] != original_target:
+                #     print(f"Drone {drone_name} received a new target while moving to {waypoint_name}")
+                #     # interrupt movement with hover
+                #     client.hoverAsync().join()
 
-                    # push the original target back to the queue to be revisited later
-                    heapq.heappush(waypoint_queue, original_target)
-                    break
+                #     # push the original target back to the queue to be revisited later
+                #     heapq.heappush(waypoint_queue, original_target)
+                #     break
 
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
@@ -141,25 +142,29 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             status_dictionary[drone_name] = "SEARCHING"
             print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
 
+            # hover for 5 seconds
+            client.hoverAsync().join()
+            time.sleep(5)
+
             # Take a picture
             base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
-            image_queue.put(Image(drone_name, airsim.ImageType.Scene, base64_picture))
+            image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 
-            time.sleep(60)
+            time.sleep(5)
 
             current_target_dictionary[drone_name] = None
             print(f"Drone {drone_name} finished searching {waypoint_name}")
             searched_areas_dictionary[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
-            status_dictionary[drone_name] = "WAITING"
+            status_dictionary[drone_name] = "IDLE"
 
 
         else:
             print(f"Drone {drone_name} is waiting for commands.")
-            status_dictionary[drone_name] = "WAITING"
-            time.sleep(5)
+            status_dictionary[drone_name] = "IDLE"
+            time.sleep(10)
 
 
 
