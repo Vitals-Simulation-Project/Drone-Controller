@@ -149,6 +149,15 @@ def parentController(drone_count):
     websocket_client_thread = threading.Thread(target=start_websocket_client, daemon=True)
     websocket_client_thread.start()
 
+
+    # delete all waypoints from the UI (for testing, TODO: remove this)
+    for i in range(1, 6):
+        message = {
+            "MessageType": "DeleteWaypoint",
+            "ID": i
+        }
+        send_to_ui(json.dumps(message))
+
     # update drone states to start off
     for i in range(drone_count):
         status_data = {
@@ -348,6 +357,11 @@ def parentController(drone_count):
     # Wait for all processes to finish
     for p in processes:
         p.join()
+    
+    # close the websocket server
+    websocket_server_thread.join()
+    websocket_client_thread.join()
+
 
 
 
