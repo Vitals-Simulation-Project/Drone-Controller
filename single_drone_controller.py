@@ -105,11 +105,11 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             print("Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
 
 
-            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, VELOCITY, vehicle_name=drone_name)
+            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
             status_dictionary[drone_name] = "MOVING"
 
             while True:
-                # if current_target_dictionary[drone_name] != original_target:
+                # if current_target_dictionary[drone_name] != original_target: (TODO: Fix and test this)
                 #     print(f"Drone {drone_name} received a new target while moving to {waypoint_name}")
                 #     # interrupt movement with hover
                 #     client.hoverAsync().join()
@@ -121,17 +121,22 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
+                #gpsData = drone_state.gps_location
 
-
+                #print("Current altitude: ", gpsData.altitude)
+                #print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                 if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE):
                     gpsData = drone_state.gps_location
-                    client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+10, VELOCITY / 3).join()
-                    #print("moving up")
-                    client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt, VELOCITY, vehicle_name=drone_name)
-                    #print("continuing to target")
+                    #client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+5, VELOCITY / 2, vehicle_name=drone_name).join()
+                    # move z up
+                    client.hoverAsync().join()
+                    print("moving up")
+                    client.moveToZAsync(current_z - (MIN_ALTITUDE / 2), VELOCITY / 2, vehicle_name=drone_name).join()
+                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+                    print("continuing to target")
 
                 # Check if the drone gps is close enough to the target (within a small threshold)
-                distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2 + (current_z - waypoint_z)**2)**0.5
+                distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2)**0.5
                 #print("Distance to target: ", distance)
                 if distance < 5.0:  # 5-meter tolerance
                     move_future.join()

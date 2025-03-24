@@ -150,13 +150,6 @@ def parentController(drone_count):
     websocket_client_thread.start()
 
 
-    # delete all waypoints from the UI (for testing, TODO: remove this)
-    for i in range(1, 6):
-        message = {
-            "MessageType": "DeleteWaypoint",
-            "ID": i
-        }
-        send_to_ui(json.dumps(message))
 
     # update drone states to start off
     for i in range(drone_count):
@@ -187,12 +180,19 @@ def parentController(drone_count):
     heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
 
 
+
     processes = []  # List to store process references for each drone
     # Create and start processes for each drone
     for x in range(1):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
+        status_data = {
+            "MessageType": "UpdateDroneState",
+            "DroneID": int(x),
+            "State": "INITIALIZING"
+        }
+        send_to_ui(json.dumps(status_data))
         p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue))
         p.start()
         processes.append(p)
