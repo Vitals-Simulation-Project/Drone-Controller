@@ -10,11 +10,19 @@ import base64
 import heapq
 import asyncio
 
+
 from classes import Image
 from helper_functions import unreal_to_gps
+import search_functions
 
 MIN_ALTITUDE = 10
 VELOCITY = 15
+
+WAYPOINT_ALTITUDE = -15            # Fixed altitude (negative for AirSim)
+WAYPOINT_SIDE_LENGTH = 10          # Square size
+WAYPOINT_SPEED = 8                 # Speed (m/s)
+
+
 
 
 # Enables api control, takes off drone, returns the client
@@ -148,17 +156,25 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
 
             # hover for 5 seconds
-            client.hoverAsync().join()
+            client.hoverAsync(vehicle_name=drone_name).join()
             time.sleep(5)
 
+            print("Calling search function")
+            drone_state = client.getMultirotorState(vehicle_name=drone_name)
+            position = drone_state.kinematics_estimated.position
+            current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
+            print("Current position: ", current_x, current_y, current_z)
+
+            search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            print("Search function finished")
             # Take a picture
-            base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
+            # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
-            image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
+            # image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 
-            time.sleep(5)
+            # time.sleep(5)
 
             current_target_dictionary[drone_name] = None
             print(f"Drone {drone_name} finished searching {waypoint_name}")

@@ -354,13 +354,10 @@ def parentController(drone_count):
         for p in processes:
             p.terminate()
 
-    # Wait for all processes to finish
-    for p in processes:
-        p.join()
-    
-    # close the websocket server
-    websocket_server_thread.join()
-    websocket_client_thread.join()
+        # Wait for all processes to finish
+        for p in processes:
+            p.join(timeout=3) # Wait for at most 3 seconds for each process to finish
+        
 
 
 
