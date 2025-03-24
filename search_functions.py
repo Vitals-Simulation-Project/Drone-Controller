@@ -38,13 +38,14 @@ def waypoint_search(client, drone_name, center_x, center_y, side_length, altitud
         time.sleep(3)
         
         if (create_mask(client, drone_name) == True): # take pictures
+            print("Target found")
             return
     
 def create_mask(client, drone_name):
     camera_name = "front-" + drone_name
     img = client.simGetImage(camera_name=camera_name, image_type= airsim.ImageType.Infrared, vehicle_name=drone_name)
     depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
-    
+    print("Took infrared and depth images")
     img1d = np.frombuffer(img, dtype=np.uint8)  # this section is creating the black and white mask to outline anything in the infared
     img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
     hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
@@ -53,8 +54,8 @@ def create_mask(client, drone_name):
     upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
     mask = cv2.inRange(hsv, lower, upper)   
-    # cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
-    # cv2.waitKey(0)
+    cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
+    cv2.waitKey(0)
     try:     
         horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
         calculateDistance_angle(client, drone_name, mask, depth[0])
@@ -108,26 +109,6 @@ def get_yaw_angle_to_target(client, drone_name, x, y): # this gets the drone to 
 
     return yaw_deg
 
-# def create_waypoint(client): # this is for test case / can be deleted
-#     state = client.getMultirotorState()
-#     currentposition = state.kinematics_estimated.position
-    
-#     client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-15 ,10).join()
-#     client.moveToPositionAsync(currentposition.x_val+200,currentposition.y_val-12 , currentposition.z_val-15 ,20).join() 
-#     currentposition = state.kinematics_estimated.position
-#     return currentposition
-
-# def MoveToGPSAsyncCollsion(self, latitude, longitude, altitude, velocity, timeout_sec = 3e+38,  vehicle_name = ''): # not used needs to be updated the movement we use LATER
-#     self.moveToGPSAsync(latitude,longitude,altitude,velocity,vehicle_name= vehicle_name)
-#     t_end = time.time() + 30
-#     while (time.time()<t_end): ## need a solution to this its just a bandaid rn 
-#         if (self.getDistanceSensorData(distance_sensor_name='Distance').distance<5 or self.getDistanceSensorData(distance_sensor_name='Distance2').distance<5):
-#             gpsData = self.getGpsData().gnss.geo_point
-        
-#             self.moveToGPSAsync(gpsData.latitude,gpsData.latitude,gpsData.altitude+10,3).join()
-#             self.moveToGPSAsync(latitude,longitude,altitude,velocity,vehicle_name= vehicle_name)
-#             #print("moving up")
-#     self.hoverAsync
 
 def calculateDistance_angle(client, drone_name, mask, depthPerspective):
     client.hoverAsync(vehicle_name=drone_name)
@@ -213,28 +194,3 @@ def cord_calculation(client, drone_name, angle, distance, clockwise):
     confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
     
 
-# try:
-#     state = client.getMultirotorState()
-#     currentposition = state.kinematics_estimated.position
-#     create_waypoint() 
-    
-#     time.sleep(3)
-#     waypoint_search(client, 230, -12, waypoint_side_length, waypoint_altitude, waypoint_speed) # Change to the waypoint given
- 
-
-# finally:
-#     # Land the drone
-#     print("Landing")
-#     client.landAsync().join()
-
-#     # Check landed state and disarm
-#     landed_state = client.getMultirotorState().landed_state
-#     if landed_state == airsim.LandedState.Landed:
-#         client.armDisarm(False)
-#         print("Drone successfully disarmed.")
-#     else:
-#         print("Drone is not in a landed state. Skipping disarm.")
-
-#     # Disable API control
-#     client.enableApiControl(False)
-#     print("Flight operation completed.")

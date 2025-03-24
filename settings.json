@@ -68,7 +68,7 @@
           ],
           "Gimbal": {
             "Stabilization": 1,
-            "Pitch": -30,
+            "Pitch": -20,
             "Roll": 0,
             "Yaw": 0
           },
