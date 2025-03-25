@@ -35,7 +35,8 @@ WEBSOCKET_CLIENT = None # Global websocket client
 
 DRONE_COUNT = 5
 
-USE_VLM = False
+TEST_VLM = False
+RELEASE_BUILD = False
 
 
 
@@ -150,17 +151,30 @@ def parentController(drone_count):
     websocket_client_thread.start()
 
 
+    # launch the unreal executable
+    if RELEASE_BUILD:
+        print("Launching project executable...")
+        os.startfile(local_config.EXECUTABLE_PATH)
+    else:
+        print("Running in editor mode. No executable to launch.")
+        
 
-    # update drone states to start off
-    for i in range(drone_count):
-        status_data = {
-            "MessageType": "UpdateDroneState",
-            "DroneID": int(i),
-            "State": "INACTIVE"
-        }
-        send_to_ui(json.dumps(status_data))
 
-    if USE_VLM:
+    # block and wait until start message is received from the UI
+
+
+
+    time.sleep(5) # wait for the UI to connect
+    # receive initial list of waypoints
+
+
+
+
+
+
+
+
+    if TEST_VLM:
         print("Loading VLM...")
         load_model(MODEL)
     
@@ -211,7 +225,7 @@ def parentController(drone_count):
 
 
     # Send the initial waypoints to the VLM
-    # if USE_VLM:
+    # if TEST_VLM:
     #     message_history.append({
     #         'role': 'user',
     #         'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
@@ -263,7 +277,7 @@ def parentController(drone_count):
             # assign waypoints to any waiting drones
             for drone_name in status_dictionary:
                 if status_dictionary[drone_name] == "IDLE":
-                    # if USE_VLM and len(waypoint_queue) > 0:
+                    # if TEST_VLM and len(waypoint_queue) > 0:
                         # # ask the VLM model for the next waypoint to be assigned
                         # message_history.append({
                         #     'role': 'user',
@@ -314,7 +328,7 @@ def parentController(drone_count):
 
 
                 # send the image to the VLM model for analysis
-                if USE_VLM:
+                if TEST_VLM:
                     print("Not implemented yet")
                     # TODO
 

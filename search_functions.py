@@ -27,6 +27,7 @@ def waypoint_search(client, drone_name, center_x, center_y, side_length, altitud
     ]
 
     for x, y in square_corners: 
+        print("Going to waypoint: ", x, y)
         client.moveToPositionAsync(
             x, y, altitude, speed,
             drivetrain=airsim.DrivetrainType.ForwardOnly,
@@ -40,6 +41,9 @@ def waypoint_search(client, drone_name, center_x, center_y, side_length, altitud
         if (create_mask(client, drone_name) == True): # take pictures
             print("Target found")
             return
+        else:
+            print("Target not found")
+            continue
     
 def create_mask(client, drone_name):
     camera_name = "front-" + drone_name

@@ -132,16 +132,18 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 #gpsData = drone_state.gps_location
 
                 #print("Current altitude: ", gpsData.altitude)
-                #print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
+                print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                 if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE):
                     gpsData = drone_state.gps_location
                     #client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+5, VELOCITY / 2, vehicle_name=drone_name).join()
                     # move z up
                     client.hoverAsync().join()
-                    print("moving up")
+                    print("current height was: " + str(current_z))
                     client.moveToZAsync(current_z - (MIN_ALTITUDE / 2), VELOCITY / 2, vehicle_name=drone_name).join()
-                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
-                    print("continuing to target")
+                    print("moving up to ", current_z - (MIN_ALTITUDE / 2))
+                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt - MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+
+                    print("continuing to: " + str(waypoint_lat) + " " + str(waypoint_lon) + " " + str(waypoint_alt - MIN_ALTITUDE))
 
                 # Check if the drone gps is close enough to the target (within a small threshold)
                 distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2)**0.5
@@ -165,7 +167,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print("Current position: ", current_x, current_y, current_z)
 
-            search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            #search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             print("Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
