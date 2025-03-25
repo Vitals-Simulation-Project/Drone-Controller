@@ -249,3 +249,21 @@ finally:
     # Disable API control
     client.enableApiControl(False)
     print("Flight operation completed.")
+
+
+
+
+
+def MoveToPositionAsyncCollsion(self, X, Y, altitude, velocity, timeout_sec = 3e+38,  vehicle_name = ''): # not used needs to be updated the movement we use LATER
+    self.moveToPositionAsync(X,Y,altitude,velocity,vehicle_name= vehicle_name)
+    t_end = time.time() + 30
+    while (time.time()<t_end): ## need a solution to this its just a bandaid rn 
+        if (self.getDistanceSensorData(distance_sensor_name='Distance').distance<5 or self.getDistanceSensorData(distance_sensor_name='Distance2').distance<5):
+            state = client.getMultirotorState()
+            currentposition = state.kinematics_estimated.position
+        
+            self.moveToPositionAsync(currentposition.x_val,currentposition.y_val,currentposition.z_val+10,3).join()
+            self.moveToGPSAsync(X,Y,altitude,velocity,vehicle_name= vehicle_name)
+            #print("moving up")
+    self.hoverAsync
+

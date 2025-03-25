@@ -167,7 +167,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print("Current position: ", current_x, current_y, current_z)
 
-            #search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             print("Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
