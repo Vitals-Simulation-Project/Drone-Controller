@@ -191,7 +191,7 @@ def parentController(drone_count):
 
 
     # DOE1 is a deer in front of the spawn area (for testing)
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, -30, 3))
+    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, 30, 3))
 
 
 
@@ -329,8 +329,24 @@ def parentController(drone_count):
 
                 # send the image to the VLM model for analysis
                 if TEST_VLM:
+                    message_history.append({
+                        'role': 'user',
+                        'content': "Please analyze this image and determine if a human person is present."
+                    })
+                    response = chat(
+                        messages = message_history,
+                        model = MODEL,
+                        format = VLMOutput.model_json_schema()
+                    )
+                
+                    print(response)
+                    message = VLMOutput.model_validate_json(response.message.content)
+                    print(message.assigned_target_dictionary)
+
+                    assigned_target = message.assigned_target_dictionary[drone_name]
+                    current_target_dictionary[drone_name] = assigned_target
+                    print(f"Assigned waypoint {assigned_target} to Drone {drone_name}")
                     print("Not implemented yet")
-                    # TODO
 
 
 

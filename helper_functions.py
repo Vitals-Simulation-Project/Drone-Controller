@@ -26,6 +26,6 @@ def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
     new_lon = new_lat_lon[1]  # Extract longitude
 
     # Convert UE Z to GPS Altitude (UE Z is negative when going up)
-    new_alt = home_alt - ue_z  
+    #new_alt = home_alt - ue_z  
 
-    return new_lat, new_lon, new_alt
+    return new_lat, new_lon, ue_z

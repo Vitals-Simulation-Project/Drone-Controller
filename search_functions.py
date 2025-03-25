@@ -46,8 +46,9 @@ def waypoint_search(client, drone_name, center_x, center_y, side_length, altitud
             continue
     
 def create_mask(client, drone_name):
-    camera_name = "front-" + drone_name
-    img = client.simGetImage(camera_name=camera_name, image_type= airsim.ImageType.Infrared, vehicle_name=drone_name)
+    #camera_name = "front-" + drone_name
+    camera_name = "front_center"
+    img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
     depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
     print("Took infrared and depth images")
     img1d = np.frombuffer(img, dtype=np.uint8)  # this section is creating the black and white mask to outline anything in the infared
@@ -183,6 +184,7 @@ def cord_calculation(client, drone_name, angle, distance, clockwise):
         angle = abs(angle -45)
         yaw = yaw - angle
   
+    print("rotating to yaw: ", yaw)
     client.rotateToYawAsync(yaw, vehicle_name=drone_name).join()  #rotate to the target
     time.sleep(1) #sleep to give it time
   
