@@ -21,12 +21,12 @@
       "ControlPort": 139,
       "LocalHostIp": "172.30.16.1",
       "Cameras": {
-        "front-center": {
+        "front-0": {
           "CaptureSettings": [
             {
-              "ImageType": -1,
-              "Width": 512,
-              "Height":288,
+              "ImageType": 0,
+              "Width": 1024,
+              "Height":576,
               "FOV_Degrees": 90,
               "AutoExposureSpeed": 100,
               "AutoExposureBias": 0,
@@ -35,20 +35,6 @@
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
               "ProjectionMode": "",
-              "OrthoWidth": 10
-            },
-            {
-              "ImageType": 0,
-              "Width": 512,
-              "Height":288,
-              "FOV_Degrees": 90,
-              "AutoExposureSpeed": 100,
-              "AutoExposureBias": 0,
-              "AutoExposureMaxBrightness": 0.64,
-              "AutoExposureMinBrightness": 0.03,
-              "MotionBlurAmount": 0,
-              "TargetGamma": 1,
-              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
             },
             {
@@ -76,13 +62,12 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "orthographic",
+              "ProjectionMode": "",
               "OrthoWidth": 20
             }
-
           ],
           "Gimbal": {
-            "Stabilization": 1,
+            "Stabilization": 0,
             "Pitch": 0,
             "Roll": 0,
             "Yaw": 0
@@ -90,7 +75,7 @@
           "Pitch": 0,
           "Roll": 0,
           "Yaw": 0,
-          "X": 0,
+          "X": 1,
           "Y": 0,
           "Z": 0
 
@@ -899,23 +884,23 @@
     "SubWindows": [
       {
         "WindowID": 0,
-        "CameraName": "front",
+        "CameraName": "front-0",
         "ImageType": 0,
         "VehicleName": "0",
         "Visible": true
       },
       {
         "WindowID": 1,
-        "CameraName": "front",
-        "ImageType": 0,
-        "VehicleName": "2",
+        "CameraName": "front-0",
+        "ImageType": 2,
+        "VehicleName": "0",
         "Visible": true
       },
       {
         "WindowID": 2,
-        "CameraName": "front",
-        "ImageType": 0,
-        "VehicleName": "3",
+        "CameraName": "front-0",
+        "ImageType": 7,
+        "VehicleName": "0",
         "Visible": true
       }
     ]
