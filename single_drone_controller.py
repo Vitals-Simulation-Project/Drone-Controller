@@ -133,7 +133,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
         cv2.waitKey(0)
         try:     
-            horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
+            horizontal = np.argwhere(mask)[4][1] # change the first [] to decide how many pixels it needs to see to move
             calculateDistance_angle(client, drone_name, mask, depth[0])
             return True
         except IndexError: #exceptions are for when there is nothing
@@ -158,7 +158,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         for x, y in square_corners: 
             client.moveToPositionAsync(
-                x, y, altitude, speed,
+                x, y, -MIN_ALTITUDE, speed,
                 drivetrain=airsim.DrivetrainType.ForwardOnly,
                 yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0),
                 vehicle_name=drone_name  
@@ -211,7 +211,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     
         perpixel = 90/256  # FOV / the horizontal image size
     
-        horizontal = np.argwhere(mask)[3][1] # finds where the white pixels in the mask are
+        horizontal = np.argwhere(mask)[4][1] # finds where the white pixels in the mask are
         
         if(horizontal >= (256 / 2)):
             #print("right")
@@ -219,7 +219,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         elif(horizontal<(256 / 2)): 
             #print("left")
             clockwise = False   
-        vert = np.argwhere(mask)[3][0]
+        vert = np.argwhere(mask)[4][0]
         distance = depth_img_in_meters[vert][horizontal][0] #plugs in where the white is into the depth map to get the distance
 
 
@@ -327,7 +327,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_FORWARD_DISTANCE):
                     print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                     print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE)
-                    gpsData = drone_state.gps_location
+                    #gpsData = drone_state.gps_location
                     #client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+5, VELOCITY / 2, vehicle_name=drone_name).join()
                     # move z up
                     client.hoverAsync().join()

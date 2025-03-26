@@ -358,13 +358,13 @@ def parentController(drone_count):
                                 {
                                     "role": "user",
                                     "content": "Please analyze this image and set human_present_in_image to True if a human is present.",
-                                    "image": [image_path]
+                                    "image": [image.image]
                                 }
                             ],
                             "stream": False
                         }
 
-                        response = requests.post(URL, json=data, timeout=10)
+                        response = requests.post(URL, json=data, timeout=30)
                         response = json.loads(response.text)
                         
                         
