@@ -190,7 +190,7 @@ def parentController(drone_count):
 
 
     # DOE1 is a deer in front of the spawn area (for testing)
-    heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, 30, 3))
+    #heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, 30, 3))
 
 
 
@@ -329,10 +329,10 @@ def parentController(drone_count):
                 # send the image to the VLM model for analysis
                 if TEST_VLM:
                     print("Sending image to VLM model for analysis...")
-                    print("image b64 ", image.image)
+                    #print("image b64 ", image.image)
                     message_history.append({
                         'role': 'user',
-                        'content': "Please analyze this image and determine if a human is present, set human_present_in_image to True if a human is present. Analyze the image and provide a comment on anything else you see in the photo, including other signs of life.",
+                        'content': "Please analyze this image and determine if a human is present, set human_present_in_image to True if a human is present.",
                         'image': [image.image]
                     })
                     response = chat(
