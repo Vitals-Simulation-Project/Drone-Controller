@@ -152,9 +152,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             print("Search function finished")
             # Take a picture
-            base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
+            # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
-            image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
+            # image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 
