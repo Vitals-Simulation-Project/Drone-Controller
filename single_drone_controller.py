@@ -137,6 +137,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             # hover for 5 seconds
             client.hoverAsync(vehicle_name=drone_name).join()
+            # go down 20 meters
+            client.moveToZAsync(-20, WAYPOINT_SPEED, vehicle_name=drone_name).join()
+            # rotate left 30 degrees
+            client.rotateToYawAsync(-30, vehicle_name=drone_name).join()
             time.sleep(5)
 
             print("Calling search function")
@@ -145,12 +149,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print("Current position: ", current_x, current_y, current_z)
 
-            search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            #search_functions.waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             print("Search function finished")
             # Take a picture
-            # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
+            base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
-            # image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
+            image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 

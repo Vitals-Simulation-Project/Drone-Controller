@@ -35,7 +35,7 @@ WEBSOCKET_CLIENT = None # Global websocket client
 
 DRONE_COUNT = 5
 
-TEST_VLM = False
+TEST_VLM = True
 RELEASE_BUILD = False
 
 
@@ -329,9 +329,11 @@ def parentController(drone_count):
 
                 # send the image to the VLM model for analysis
                 if TEST_VLM:
+                    print("Sending image to VLM model for analysis...")
                     message_history.append({
                         'role': 'user',
-                        'content': "Please analyze this image and determine if a human person is present."
+                        'content': "Please analyze this image and determine if a human is present.",
+                        'image': image_path
                     })
                     response = chat(
                         messages = message_history,
@@ -341,12 +343,11 @@ def parentController(drone_count):
                 
                     print(response)
                     message = VLMOutput.model_validate_json(response.message.content)
-                    print(message.assigned_target_dictionary)
 
-                    assigned_target = message.assigned_target_dictionary[drone_name]
-                    current_target_dictionary[drone_name] = assigned_target
-                    print(f"Assigned waypoint {assigned_target} to Drone {drone_name}")
-                    print("Not implemented yet")
+                    if message.human_present_in_image:
+                        print(f"Drone {image.drone_id} has found a human")
+                    
+
 
 
 
