@@ -88,8 +88,7 @@ message_history = [
     {
         'role': 'assistant',
         'content': (
-            "Understood. I am ready to assist in the search and rescue mission.\n"
-            "Please provide the initial waypoint list and wait while I generate the target waypoints for each drone."            
+            "Understood. I am ready to assist in the search and rescue mission."                   
         )
     }
 ]
@@ -330,16 +329,26 @@ def parentController(drone_count):
                 # send the image to the VLM model for analysis
                 if TEST_VLM:
                     print("Sending image to VLM model for analysis...")
+                    print("image b64 ", image.image)
                     message_history.append({
                         'role': 'user',
-                        'content': "Please analyze this image and determine if a human is present.",
-                        'image': image_path
+                        'content': "Please analyze this image and determine if a human is present, set human_present_in_image to True if a human is present. Analyze the image and provide a comment on anything else you see in the photo, including other signs of life.",
+                        'image': [image.image]
                     })
                     response = chat(
                         messages = message_history,
                         model = MODEL,
                         format = VLMOutput.model_json_schema()
                     )
+                    # response = chat(
+                    #     messages = {
+                    #     'role': 'user',
+                    #     'content': "Please analyze this image and set human_present_in_image to True if a human is present.",
+                    #     'image': [image_path]
+                    #     },
+                    #     model = MODEL,
+                    #     format = VLMOutput.model_json_schema()
+                    # )
                 
                     print(response)
                     message = VLMOutput.model_validate_json(response.message.content)

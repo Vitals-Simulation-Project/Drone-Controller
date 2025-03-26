@@ -98,7 +98,8 @@ def confirm_target_search(client, drone_name, center_x, center_y, side_length, a
         time.sleep(3)
         
         # TODO: take photo here / VLM integration 
-        print("Taking photo, NOT IMPLEMENTED YET")
+        # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
+        # image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 
