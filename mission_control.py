@@ -333,28 +333,50 @@ def parentController(drone_count):
                     message_history.append({
                         'role': 'user',
                         'content': "Please analyze this image and determine if a human is present, set human_present_in_image to True if a human is present.",
-                        'image': [image.image]
+                        'image': [image.image],
                     })
-                    response = chat(
-                        messages = message_history,
-                        model = MODEL,
-                        format = VLMOutput.model_json_schema()
-                    )
-                    # response = chat(
-                    #     messages = {
-                    #     'role': 'user',
-                    #     'content': "Please analyze this image and set human_present_in_image to True if a human is present.",
-                    #     'image': [image_path]
-                    #     },
-                    #     model = MODEL,
-                    #     format = VLMOutput.model_json_schema()
-                    # )
-                
-                    print(response)
-                    message = VLMOutput.model_validate_json(response.message.content)
+                    try:
+                        # response = chat(
+                        #     messages = message_history,
+                        #     model = MODEL,
+                        #     format = VLMOutput.model_json_schema(),
+                        #     timeout=5
+                        # )
+                        # response = chat(
+                        #     messages = {
+                        #     'role': 'user',
+                        #     'content': "Please analyze this image and set human_present_in_image to True if a human is present.",
+                        #     'image': [image_path]
+                        #     },
+                        #     model = MODEL,
+                        #     format = VLMOutput.model_json_schema()
+                        # )
 
-                    if message.human_present_in_image:
-                        print(f"Drone {image.drone_id} has found a human")
+                        data = {
+                            "model": MODEL,
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": "Please analyze this image and set human_present_in_image to True if a human is present.",
+                                    "image": [image_path]
+                                }
+                            ],
+                            "stream": False
+                        }
+
+                        response = requests.post(URL, json=data, timeout=10)
+                        response = json.loads(response.text)
+                        
+                        
+                    
+                        print(response)
+                        # message = VLMOutput.model_validate_json(response.message.content)
+
+                        # if message.human_present_in_image:
+                        #     print(f"Drone {image.drone_id} has found a human")
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        print("VLM model timed out. Skipping image analysis.")
                     
 
 
