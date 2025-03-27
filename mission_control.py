@@ -333,7 +333,7 @@ def parentController(drone_count):
                     message_history.append({
                         'role': 'user',
                         'content': "Please analyze this image and determine if a human is present, set human_present_in_image to True if a human is present.",
-                        'image': [image.image],
+                        'images': [image.image],
                     })
                     try:
                         # response = chat(
@@ -358,7 +358,7 @@ def parentController(drone_count):
                                 {
                                     "role": "user",
                                     "content": "Please analyze this image and set human_present_in_image to True if a human is present.",
-                                    "image": [image.image]
+                                    "images": [image.image]
                                 }
                             ],
                             "stream": False
