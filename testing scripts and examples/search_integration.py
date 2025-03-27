@@ -67,8 +67,8 @@ def create_mask():
     upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
     mask = cv2.inRange(hsv, lower, upper)   
-    # cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
-    # cv2.waitKey(0)
+    cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
+    cv2.waitKey(0)
     try:     
         horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
         calculateDistance_angle(mask,depth[0])
@@ -162,13 +162,13 @@ def calculateDistance_angle(mask,depthPerspective):
         clockwise = False   
     vert = np.argwhere(mask)[3][0]
     distance = depth_img_in_meters[vert][horizontal][0] #plugs in where the white is into the depth map to get the distance
-
+    
 
     calculations = math.sqrt(distance**2 - height**2)  # the big P triangle theorm
 
     
     horizontalangle = perpixel * horizontal
-    #print(horizontalangle, calculations, clockwise)
+    print(horizontalangle, calculations, clockwise)
     CordCalulcation(horizontalangle, calculations, clockwise)
 
 def to_eularian_angles(q): # takes eularian's and give pitch roll yaw
@@ -220,8 +220,11 @@ def CordCalulcation(angle, distance,clockwise):
     #print(currentposition)
     time.sleep(1) # gives time to stop
 
-   
-    confirm_target_search(client, currentposition.x_val, currentposition.y_val, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
+    if( distance > 80):
+        print("to far doing a waypoint")
+        waypoint_search(client,currentposition.x_val, currentposition.y_val, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
+    else:
+        confirm_target_search(client, currentposition.x_val, currentposition.y_val, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
     
 
 try:
