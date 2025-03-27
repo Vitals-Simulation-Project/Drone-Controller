@@ -4,6 +4,7 @@ import os
 import numpy as np
 import cv2
 import math
+from stopwatch import Stopwatch
 
 client = airsim.MultirotorClient()
 client.confirmConnection()
@@ -67,8 +68,8 @@ def create_mask():
     upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
     mask = cv2.inRange(hsv, lower, upper)   
-    cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
-    cv2.waitKey(0)
+    #cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
+    #cv2.waitKey(0)
     try:     
         horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
         calculateDistance_angle(mask,depth[0])
@@ -213,7 +214,37 @@ def CordCalulcation(angle, distance,clockwise):
     time.sleep(1) #sleep to give it time
   
     
-    client.moveByVelocityBodyFrameAsync(5,0,0,distance/5).join() # travels to the target
+   
+    stopwatch = Stopwatch(2)
+    stopwatch.start()
+    client.moveByVelocityBodyFrameAsync(5,0,0,distance/5)
+    
+    while(stopwatch.duration<(distance /5)):
+
+        if (client.getDistanceSensorData(distance_sensor_name='Distance').distance<5 or client.getDistanceSensorData(distance_sensor_name='Distance2').distance<5):
+            state = client.getMultirotorState()
+            currentposition = state.kinematics_estimated.position
+
+           
+            stopwatch.stop()
+            print("moving up ")
+            client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-5 ,3, vehicle_name= drone).join()
+            #client.moveByVelocityZAsync(3,3,3,3).join()
+            print("done moving up ")
+
+            newdistance = distance - (5 * (stopwatch.duration))
+            stopwatch.start()
+            client.moveByVelocityBodyFrameAsync(5,0,0,newdistance/5) # travels to the target
+            #print("moving up")
+        
+    #client.moveByVelocityBodyFrameAsync(5,0,0,distance/5).join() # travels to the target
+    #if i need to collision avodiance
+    stopwatch.stop()
+    stopwatch.reset()
+    print("out of movement")
+    #collision call
+    #new distance = distance - (5* time end - time start)
+    # continue 
    
     state = client.getMultirotorState()
     currentposition = state.kinematics_estimated.position

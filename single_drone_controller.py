@@ -273,8 +273,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         time.sleep(1) #sleep to give it time
     
         
-        client.moveByVelocityBodyFrameAsync(5, 0, 0, distance / 5, vehicle_name=drone_name).join() # travels to the target
-    
+        client.moveByVelocityBodyFrameAsync(7, 0, 0, distance / 7, vehicle_name=drone_name).join() # travels to the target
         state = client.getMultirotorState(vehicle_name=drone_name)
         currentposition = state.kinematics_estimated.position
         #print(currentposition)
