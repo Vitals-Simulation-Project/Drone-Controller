@@ -35,8 +35,8 @@ WEBSOCKET_CLIENT = None # Global websocket client
 
 DRONE_COUNT = 1
 
-TEST_VLM = True
-RELEASE_BUILD = True
+TEST_VLM = False # set to True if testing the VLM model, False if not
+RELEASE_BUILD = False # set to True if running the executable, False if running in editor mode
 VLMTIMEOUT = 600 # time out for VLM model in seconds
 
 
