@@ -33,10 +33,11 @@ SEND_UI_DATA_QUEUE = Queue() # Queue to store data to be sent to the UI
 WEBSOCKET_CLIENT = None # Global websocket client 
 
 
-DRONE_COUNT = 5
+DRONE_COUNT = 1
 
 TEST_VLM = True
 RELEASE_BUILD = False
+VLMTIMEOUT = 60 # time out for VLM model in seconds
 
 
 
@@ -196,7 +197,7 @@ def parentController(drone_count):
 
     processes = []  # List to store process references for each drone
     # Create and start processes for each drone
-    for x in range(1):
+    for x in range(DRONE_COUNT):
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
@@ -224,22 +225,22 @@ def parentController(drone_count):
 
 
     # Send the initial waypoints to the VLM
-    # if TEST_VLM:
-    #     message_history.append({
-    #         'role': 'user',
-    #         'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
-    #     })
-    #     response = chat(
-    #         messages = message_history,
-    #         model = MODEL,
-    #         format = VLMOutput.model_json_schema()
-    #     )
-    
-    #     print(response)
-    #     message = VLMOutput.model_validate_json(response.message.content)
-    #     print(message.assigned_target_dictionary)
+    if TEST_VLM:
+        data = {
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello"
+                }
+            ],
+            "stream": False
+        }    
+        response = requests.post(URL, json=data, timeout=VLMTIMEOUT)
+        response = json.loads(response.text)
 
-    #     time.sleep(60)
+    
+        print(response)
 
 
     start_time = time.time()
@@ -276,8 +277,8 @@ def parentController(drone_count):
             # assign waypoints to any waiting drones
             for drone_name in status_dictionary:
                 if status_dictionary[drone_name] == "IDLE":
-                    # if TEST_VLM and len(waypoint_queue) > 0:
-                        # # ask the VLM model for the next waypoint to be assigned
+                    if TEST_VLM and len(waypoint_queue) > 0:
+                        # ask the VLM model for the next waypoint to be assigned
                         # message_history.append({
                         #     'role': 'user',
                         #     'content': "The waypoint queue is: " + str(waypoint_queue) + ". Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT} - 1) to the waypoint name."
@@ -287,8 +288,27 @@ def parentController(drone_count):
                         #     model = MODEL,
                         #     format = VLMOutput.model_json_schema()
                         # )
+
+                        # build a string representation of the waypoint queue
+                        waypoint_queue_str = ", ".join([f"{wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
+                        request_string = "The waypoint queue is: " + waypoint_queue_str + ". Each waypoint has it's name and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please modify the current target dictionary and return it under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT - 1}) to the waypoint name."
+                        data = {
+                            "model": MODEL,
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": request_string
+                                }
+                            ],
+                            "stream": False
+                        }
+                        print(request_string)
+
+                        response = requests.post(URL, json=data, timeout=VLMTIMEOUT)
+                        response = json.loads(response.text)
+
                     
-                        # print(response)
+                        print(response)
                         # message = VLMOutput.model_validate_json(response.message.content)
                         # print(message.assigned_target_dictionary)
 
@@ -300,7 +320,7 @@ def parentController(drone_count):
 
 
 
-                    if len(waypoint_queue) > 0:
+                    if len(waypoint_queue) > 0 and not TEST_VLM:
                         next_waypoint = heapq.heappop(waypoint_queue)
                         current_target_dictionary[drone_name] = next_waypoint
                         print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
@@ -333,7 +353,7 @@ def parentController(drone_count):
                     message_history.append({
                         'role': 'user',
                         'content': "Please analyze this image and determine if a human is present, set human_present_in_image to True if a human is present.",
-                        'image': [image.image],
+                        'images': [image.image],
                     })
                     try:
                         # response = chat(
@@ -364,7 +384,7 @@ def parentController(drone_count):
                             "stream": False
                         }
 
-                        response = requests.post(URL, json=data, timeout=30)
+                        response = requests.post(URL, json=data, timeout=VLMTIMEOUT)
                         response = json.loads(response.text)
                         
                         
