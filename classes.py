@@ -33,6 +33,6 @@ class Image:
 
 
 class VLMOutput(BaseModel):
-    #assigned_target_dictionary: dict # drone maps to waypoint
+    assigned_target_dictionary: dict # drone maps to waypoint
     human_present_in_image: bool # true if human is present in image
     comment: str # comment on the image
