@@ -306,6 +306,9 @@ def parentController(drone_count):
                         # ask the VLM model for the next waypoint to be assigned
                         waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
 
+                        # change drone state to be waiting for waypoint to be assigned
+                        status_dictionary[drone_name] = "WAITING"
+
                         message_history.append({
                             'role': 'user',
                             'content': "The waypoint queue is: " + waypoint_queue_str + ". Each waypoint has it's ID and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. The current target dictionary is: " + str(current_target_dictionary) + f". Please return your response under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT - 1}) to only the waypoint ID (a number)."
@@ -341,7 +344,7 @@ def parentController(drone_count):
                             heapq.heapify(waypoint_queue)
                             # assign the target to the drone
                             current_target_dictionary[drone_name] = assigned_target
-                            print(f"Assigned waypoint {assigned_target} to Drone {drone_name}")
+                            print(f"The VLM has assigned waypoint {assigned_target} to Drone {drone_name}")
                         else:
                             print(f"Waypoint {assigned_target} not found in the waypoint queue. Assigning next waypoint from queue...")
                             # assign the next waypoint from the queue
