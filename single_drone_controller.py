@@ -39,7 +39,7 @@ CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary):
     """ Drone process that listens for movement commands and sends status updates. """
     
 
@@ -371,7 +371,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print("Current position: ", current_x, current_y, current_z)
 
-            waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            #waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             #print("Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
@@ -390,6 +390,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         else:
             print(f"Drone {drone_name} is waiting for commands.")
+            current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
+            current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
+            print("Current position: ", current_position_dictionary[drone_name])
             #status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 

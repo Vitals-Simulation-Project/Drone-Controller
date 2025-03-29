@@ -165,6 +165,7 @@ def parentController():
     manager = mp.Manager() # manager to share data between processes
 
     current_target_dictionary = manager.dict()   # dictionary to store the current target waypoint of each drone
+    current_position_dictionary = manager.dict() # dictionary to store the current position of each drone
     status_dictionary = manager.dict()           # dictionary to store status of each drone
     request_dictionary = {}                      # dictionary that maps drone names to the ID of their request
     target_found = mp.Value('b', False)          # global variable to stop the search loop when the target is found
@@ -258,13 +259,14 @@ def parentController():
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
         request_dictionary[drone_name] = None
+        current_position_dictionary[drone_name] = None # only used for assigning new waypoints to drones
         status_data = {
             "MessageType": "UpdateDroneState",
             "DroneID": int(x),
             "State": "INITIALIZING"
         }
         send_to_ui(json.dumps(status_data))
-        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue))
+        p = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary))
         p.start()
         processes.append(p)
         print(f"Drone {drone_name} is initializing")
@@ -320,8 +322,9 @@ def parentController():
 
                     # ask the VLM model for the next waypoint to be assigned
                     waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
-                    request = f"Please assign a target waypoint to the drone {drone_name}. The waypoint queue is: {waypoint_queue_str}. Each waypoint has it's ID and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. The current target dictionary is: {str(current_target_dictionary)}. Please return your response under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT - 1}) to only the waypoint ID (a number)."
-                    #print(f"Sending request to VLM model: {request}")         
+                    # get current position of the drone
+                    request = f"Please assign a target waypoint to the drone with ID: {drone_name}. The waypoint queue is: {waypoint_queue_str}. Each waypoint has it's ID and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. The current target dictionary is: {str(current_target_dictionary)}. Please return your response under assigned_target_dictionary. Set the current target of a drone by mapping the drone ID to only the waypoint ID (a number). Try to assign drones to waypoints that are closest to them. The current position of this drone is: {current_position_dictionary[drone_name]}."
+                    print(f"Sending request to VLM model: {request}")         
                     SEND_TO_VLM_QUEUE.put(request)
 
                     # add the request id to the request dictionary
