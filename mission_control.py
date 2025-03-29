@@ -32,7 +32,7 @@ RECEIVED_UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from
 SEND_UI_DATA_QUEUE = Queue() # Queue to store data to be sent to the UI
 
 
-VLM_RESPONSE_QUEUE = Queue() # Queue to store VLM responses
+VLM_RESPONSE_QUEUE = {} # dictionary to store VLM responses, maps 
 SEND_TO_VLM_QUEUE = Queue() # Queue to store requests to be sent to the VLM model
 
 
@@ -138,7 +138,7 @@ def fetch_VLM_response():
     return None
 
 
-def parentController(drone_count):
+def parentController():
     manager = mp.Manager() # manager to share data between processes
 
     current_target_dictionary = manager.dict()   # dictionary to store the current target waypoint of each drone
@@ -149,10 +149,10 @@ def parentController(drone_count):
     waypoint_queue = []                          # priority queue to store waypoints
 
 
+
     # start the websocket server as a separate thread    
     websocket_server_thread = threading.Thread(target=start_websocket_server, daemon=True)
     websocket_server_thread.start()
-
 
     # start the websocket client as a separate thread (on the simulation side)
     websocket_client_thread = threading.Thread(target=start_websocket_client, daemon=True)
@@ -161,6 +161,7 @@ def parentController(drone_count):
     # start the VLM thread to handle requests and responses
     VLM_thread = threading.Thread(target=start_VLM_thread, daemon=True)
     VLM_thread.start()
+
 
 
     # launch the unreal executable
@@ -193,7 +194,7 @@ def parentController(drone_count):
     while True:
         websocket_data = fetch_websocket_data()
         if websocket_data:
-            print(f"Received UI WebSocket message: {websocket_data}")
+            #print(f"Received UI WebSocket message: {websocket_data}")
             json_data = json.loads(websocket_data)
             if json_data["MessageType"] == "AddWaypoint":
                 # divide by 100 to convert from cm to m
@@ -215,13 +216,7 @@ def parentController(drone_count):
         load_model(MODEL)
     
     
-    
-
-
-
-
-    # DOE1 is a deer in front of the spawn area (for testing)
-    #heapq.heappush(waypoint_queue, Waypoint("DOE1", 120, -50, 30, 3))
+    # TODO: Send initial chat message to the VLM model to explain the mission
 
 
 
@@ -243,37 +238,12 @@ def parentController(drone_count):
         print(f"Drone {drone_name} is initializing")
     
 
-
-
-
-
-
    
     while not all(status == "IDLE" for status in status_dictionary.values()):       
         print("Waiting for all drones to take off...")
         time.sleep(5)
 
 
-    # # Send the initial waypoints to the VLM
-    # if TEST_VLM:
-    #     data = {
-    #         "model": MODEL,
-    #         "messages": [
-    #             {
-    #                 "role": "user",
-    #                 "content": "Hello"
-    #             }
-    #         ],
-    #         "stream": False
-    #     }    
-    #     response = requests.post(URL, json=data, timeout=VLMTIMEOUT)
-    #     response = json.loads(response.text)
-
-    
-    #     print(response)
-
-
-    start_time = time.time()
 
     try:
         while not target_found.value:
@@ -315,7 +285,7 @@ def parentController(drone_count):
                         # ask the VLM model for the next waypoint to be assigned
                         waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
 
-                        
+                        response = send_request_to_VLM(waypoint_queue_str)
 
 
 
@@ -486,9 +456,6 @@ def parentController(drone_count):
 
 
 
-
-
-
 if __name__ == "__main__":
     # directory to store pictures
     imgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
@@ -504,6 +471,7 @@ if __name__ == "__main__":
         if not os.path.exists(droneDir):
             os.makedirs(droneDir)
 
-    mp.set_start_method('spawn')
+    mp.set_start_method('spawn') # set the start method to spawn for multiprocessing, spawn is used for Windows
 
-    parentController(DRONE_COUNT)
+    # start the mission
+    parentController()

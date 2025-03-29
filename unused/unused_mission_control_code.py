@@ -34,3 +34,22 @@
 #         'content': "Please provide the initial waypoint list and wait while I generate the target waypoints for each drone.",
 #     }
 # ]
+
+
+# # Send the initial waypoints to the VLM
+# if TEST_VLM:
+#     data = {
+#         "model": MODEL,
+#         "messages": [
+#             {
+#                 "role": "user",
+#                 "content": "Hello"
+#             }
+#         ],
+#         "stream": False
+#     }    
+#     response = requests.post(URL, json=data, timeout=VLMTIMEOUT)
+#     response = json.loads(response.text)
+
+
+#     print(response)
