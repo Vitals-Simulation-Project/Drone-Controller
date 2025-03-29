@@ -32,8 +32,10 @@ RECEIVED_UI_DATA_QUEUE = Queue() # Queue to store data from the UI, fetched from
 SEND_UI_DATA_QUEUE = Queue() # Queue to store data to be sent to the UI
 
 
-VLM_RESPONSE_QUEUE = {} # dictionary to store VLM responses, maps 
+VLM_RESPONSE_LIST = {} # dictionary to store VLM responses, maps request number to the response
 SEND_TO_VLM_QUEUE = Queue() # Queue to store requests to be sent to the VLM model
+
+request_number = 1 # the next request number to be assigned
 
 
 WEBSOCKET_CLIENT = None # Global websocket client 
@@ -108,33 +110,54 @@ def fetch_websocket_data():
 
 
 def send_request_to_VLM(request):
+    global request_number
+    request_id = request_number # store the request number for the response
+    request_number += 1 # increment the request number for the next request
     """Send a request to the VLM model and return the response in the queue"""
-    message = { # message history not needed for chat request, it handles it automatically
+    message = [ 
+        {
+        'role': 'system',
+        'content': (
+            "You are a drone operator conducting a simulated search and rescue mission.\n" 
+            "Your primary task is to create new waypoints for the drones, assign waypoints to drones, and analyze captured images."
+        )
+        },
+        {
+        'role': 'assistant',
+        'content': (
+            "Understood. I am ready to assist in the search and rescue mission."                   
+        )
+        },
+        { 
         'role': 'user',
         'content': request,
-    }
+        }
+    ]
     response = chat(
         messages = message,
         model = MODEL,
         format = VLMOutput.model_json_schema()
     )
     response = VLMOutput.model_validate_json(response.message.content)
-    VLM_RESPONSE_QUEUE.put(response) # Put the response in the queue for synchronous retrieval later
+    VLM_RESPONSE_LIST[request_id] = response # Put the response in the queue for synchronous retrieval later
 
 def start_VLM_thread():
     """Start the VLM thread to handle requests and responses"""
     while True:
         if not SEND_TO_VLM_QUEUE.empty():
             request = SEND_TO_VLM_QUEUE.get()
-            print(f"Sending request to VLM model: {request}")
+            print(f"Sending request ID {request_number} to VLM model")
             send_request_to_VLM(request)
         time.sleep(1)  # Give some time between cycles
 
 
-def fetch_VLM_response():
+def fetch_VLM_response(request_id):
     """Synchronous function to get data from the VLM response queue"""
-    if not VLM_RESPONSE_QUEUE.empty():
-        return VLM_RESPONSE_QUEUE.get()
+    global VLM_RESPONSE_LIST
+    if request_id in VLM_RESPONSE_LIST:
+        response = VLM_RESPONSE_LIST[request_id]
+        del VLM_RESPONSE_LIST[request_id]
+        return response
     return None
 
 
@@ -143,6 +166,7 @@ def parentController():
 
     current_target_dictionary = manager.dict()   # dictionary to store the current target waypoint of each drone
     status_dictionary = manager.dict()           # dictionary to store status of each drone
+    request_dictionary = {}                      # dictionary that maps drone names to the ID of their request
     target_found = mp.Value('b', False)          # global variable to stop the search loop when the target is found
     searched_areas_dictionary = manager.dict()   # dictionary mapping waypoint names to their locations that have been searched already
     image_queue = manager.Queue()                # queue to store images waiting to be processed
@@ -226,6 +250,7 @@ def parentController():
         drone_name = str(x)
         current_target_dictionary[drone_name] = None # an instance of the waypoint class
         status_dictionary[drone_name] = "INITIALIZING"
+        request_dictionary[drone_name] = None
         status_data = {
             "MessageType": "UpdateDroneState",
             "DroneID": int(x),
@@ -276,69 +301,81 @@ def parentController():
 
             # assign waypoints to any waiting drones
             for drone_name in status_dictionary:
-                if status_dictionary[drone_name] == "IDLE":
-                    if TEST_VLM and len(waypoint_queue) > 0:
-                        # change drone state to be waiting for waypoint to be assigned
-                        status_dictionary[drone_name] = "WAITING"
+                #print(f"The status of Drone {drone_name} is {status_dictionary[drone_name]}")
+                if TEST_VLM and len(waypoint_queue) > 0 and status_dictionary[drone_name] == "IDLE":
+                    # change drone state to be waiting for waypoint to be assigned
+                    status_dictionary[drone_name] = "WAITING"
 
 
-                        # ask the VLM model for the next waypoint to be assigned
-                        waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
+                    # ask the VLM model for the next waypoint to be assigned
+                    waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
+                    request = f"Please assign a target waypoint to the drone {drone_name}. The waypoint queue is: {waypoint_queue_str}. Each waypoint has it's ID and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. The current target dictionary is: {str(current_target_dictionary)}. Please return your response under assigned_target_dictionary. Set the current target of a drone by mapping the drone id (0 through {DRONE_COUNT - 1}) to only the waypoint ID (a number)."
+                    #print(f"Sending request to VLM model: {request}")         
+                    SEND_TO_VLM_QUEUE.put(request)
 
-                        response = send_request_to_VLM(waypoint_queue_str)
+                    # add the request id to the request dictionary
+                    request_dictionary[drone_name] = request_number
+                    print(f"Request number {request_number} assigned to Drone {drone_name}")
+                                    
 
-
-
-                        message = VLMOutput.model_validate_json(response.message.content)
-                        
-                        print(message.assigned_target_dictionary)
-
-                        assigned_target = int(message.assigned_target_dictionary[drone_name])
-                        print(f"Assigned target for Drone {drone_name}: {assigned_target}")
-                        for wp in waypoint_queue:
-                            if wp.name == assigned_target:
-                                assigned_target = wp
-                                break
-                        else:
-                            assigned_target = None
-
-
-                        if assigned_target is not None:
-                            # remove the assigned target from the waypoint queue
-                            for i, wp in enumerate(waypoint_queue):
-                                if wp.name == assigned_target.name:
-                                    del waypoint_queue[i]
-                                    print(f"Deleted waypoint {wp.name} from the queue")
-                                    break
-                            # fix the heap
-                            heapq.heapify(waypoint_queue)
-                            # assign the target to the drone
-                            current_target_dictionary[drone_name] = assigned_target
-                            print(f"The VLM has assigned waypoint {assigned_target} to Drone {drone_name}")
-                        else:
-                            print(f"Waypoint {assigned_target} not found in the waypoint queue. Assigning next waypoint from queue...")
-                            # assign the next waypoint from the queue
-                            if len(waypoint_queue) > 0:
-                                next_waypoint = heapq.heappop(waypoint_queue)
-                                current_target_dictionary[drone_name] = next_waypoint
-                                print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
-                            else:
-                                print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                elif TEST_VLM and status_dictionary[drone_name] == "WAITING":
+                    # get the response from the VLM model
+                    response = fetch_VLM_response(request_dictionary[drone_name])
+                    if response is None:
+                        continue
 
 
 
-
-
-
-
-                    if len(waypoint_queue) > 0 and not TEST_VLM:
-                        next_waypoint = heapq.heappop(waypoint_queue)
-                        current_target_dictionary[drone_name] = next_waypoint
-                        print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
-                    else:
-                        print(f"No waypoints available. Requesting new waypoints from VLM model...")
                     
-                        # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
+                    print(response.assigned_target_dictionary)
+
+                    assigned_target = int(response.assigned_target_dictionary[drone_name])
+                    print(f"Assigned target for Drone {drone_name}: {assigned_target}")
+                    for wp in waypoint_queue:
+                        if wp.name == assigned_target:
+                            assigned_target = wp
+                            break
+                    else:
+                        assigned_target = None
+
+
+                    if assigned_target is not None:
+                        # remove the assigned target from the waypoint queue
+                        for i, wp in enumerate(waypoint_queue):
+                            if wp.name == assigned_target.name:
+                                del waypoint_queue[i]
+                                print(f"Deleted waypoint {wp.name} from the queue")
+                                break
+                        # fix the heap
+                        heapq.heapify(waypoint_queue)
+                        # assign the target to the drone
+                        current_target_dictionary[drone_name] = assigned_target
+                        print(f"The VLM has assigned waypoint {assigned_target} to Drone {drone_name}")
+                    else:
+                        print(f"Waypoint {assigned_target} not found in the waypoint queue. Assigning next waypoint from queue...")
+                        # assign the next waypoint from the queue
+                        if len(waypoint_queue) > 0:
+                            next_waypoint = heapq.heappop(waypoint_queue)
+                            current_target_dictionary[drone_name] = next_waypoint
+                            print(f"Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
+                        else:
+                            print(f"No waypoints available. Requesting new waypoints from VLM model...")
+
+
+
+
+
+
+
+                if len(waypoint_queue) > 0 and not TEST_VLM:
+                    next_waypoint = heapq.heappop(waypoint_queue)
+                    current_target_dictionary[drone_name] = next_waypoint
+                    print(f"FALLBACK: Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
+                
+                if len(waypoint_queue) == 0 and TEST_VLM:
+                    print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                
+                    # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
                         
                 
 

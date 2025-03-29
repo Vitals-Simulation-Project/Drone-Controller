@@ -32,17 +32,6 @@ CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
 
-# Enables api control, takes off drone, returns the client
-def takeOff(drone_name):
-    client = airsim.MultirotorClient(local_config.LOCAL_IP)
-    client.confirmConnection()
-    client.enableApiControl(True, drone_name)
-    client.armDisarm(True, drone_name)
-    client.takeoffAsync(vehicle_name=drone_name).join()
-
-    # print("Drone " + drone_name + " is ready to fly")
-
-    return client
 
 
 
@@ -53,8 +42,22 @@ def takeOff(drone_name):
 def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
     """ Drone process that listens for movement commands and sends status updates. """
     
-    # Initialize AirSim client and take off
-    client = takeOff(drone_name)
+
+    # Enables api control, takes off drone, returns the client
+    def takeOff(drone_name):
+        client = airsim.MultirotorClient(local_config.LOCAL_IP)
+        client.confirmConnection()
+        client.enableApiControl(True, drone_name)
+        client.armDisarm(True, drone_name)
+        client.takeoffAsync(vehicle_name=drone_name).join()
+
+        # print("Drone " + drone_name + " is ready to fly")
+        status_dictionary[drone_name] = "IDLE"
+
+        return client
+
+
+
 
 
     def take_forward_picture(drone_name, image_type):
@@ -287,6 +290,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
 
+    # Initialize AirSim client and take off
+    client = takeOff(drone_name)
+
 
     while not target_found.value:
         current_target = current_target_dictionary[drone_name]
@@ -384,7 +390,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         else:
             print(f"Drone {drone_name} is waiting for commands.")
-            status_dictionary[drone_name] = "IDLE"
+            #status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 
 
