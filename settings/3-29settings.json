@@ -79,7 +79,95 @@
           "Y": 0,
           "Z": 0
 
-        }
+        },
+        "front": {
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 1024,
+              "Height":576,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
+            },
+            {
+              "ImageType": 5,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
+            }
+          ],
+          "Gimbal": {
+            "Stabilization": 0,
+            "Pitch": 0,
+            "Roll": 0,
+            "Yaw": 0
+          },
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0,
+          "X": 1,
+          "Y": 0,
+          "Z": 0
+          },
+      "right": {
+        "CaptureSettings": [
+          {
+            "ImageType": 0,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          },
+          {
+            "ImageType": 5,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          }
+        ],
+        "Gimbal": {
+          "Stabilization": 0,
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0
+        },
+        "Pitch": -45,
+        "Roll": 0,
+        "Yaw": 90,
+        "X": 1,
+        "Y": 0,
+        "Z": 0
+        }  
       },
       "Sensors": {
         "Distance": {
@@ -97,10 +185,18 @@
           "Pitch": 0,
           "Roll": 0,
           "DrawDebugPoints": false
+        },
+        "lidar": {
+          "SensorType": 6,
+          "Enabled": true,
+          "Yaw": 0,
+          "Pitch": 0,
+          "Roll": 0,
+          "DrawDebugPoints": false
         }
       },
-      "X": 0,
-      "Y": -4,
+      "X": 10,
+      "Y": 4,
       "Z": 0
     },
     "1": {
@@ -113,24 +209,10 @@
       "ControlPort": 139,
       "LocalHostIp": "172.30.16.1",
       "Cameras": {
-        "front-1": {
+        "front-center": {
           "CaptureSettings": [
             {
-              "ImageType": 0,
-              "Width": 1024,
-              "Height":576,
-              "FOV_Degrees": 90,
-              "AutoExposureSpeed": 100,
-              "AutoExposureBias": 0,
-              "AutoExposureMaxBrightness": 0.64,
-              "AutoExposureMinBrightness": 0.03,
-              "MotionBlurAmount": 0,
-              "TargetGamma": 1,
-              "ProjectionMode": "",
-              "OrthoWidth": 20
-            },
-            {
-              "ImageType": 2,
+              "ImageType": -1,
               "Width": 512,
               "Height":288,
               "FOV_Degrees": 90,
@@ -144,6 +226,20 @@
               "OrthoWidth": 10
             },
             {
+              "ImageType": 0,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "orthographic",
+              "OrthoWidth": 20
+            },
+            {
               "ImageType": 7,
               "Width": 512,
               "Height":288,
@@ -154,8 +250,54 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "",
+              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
+            }
+
+          ],
+          "Gimbal": {
+            "Stabilization": 1,
+            "Pitch": -90,
+            "Roll": 0,
+            "Yaw": 0
+          },
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0,
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+
+        },
+        "front": {
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 1024,
+              "Height":576,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
+            },
+            {
+              "ImageType": 5,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
             }
           ],
           "Gimbal": {
@@ -164,13 +306,57 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -45,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
           "Y": 0,
           "Z": 0
-        }
+          },
+      "right": {
+        "CaptureSettings": [
+          {
+            "ImageType": 0,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          },
+          {
+            "ImageType": 5,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          }
+        ],
+        "Gimbal": {
+          "Stabilization": 0,
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0
+        },
+        "Pitch": -45,
+        "Roll": 0,
+        "Yaw": 90,
+        "X": 1,
+        "Y": 0,
+        "Z": 0
+        }  
       },
       "Sensors": {
         "Distance": {
@@ -190,8 +376,8 @@
           "DrawDebugPoints": false
         }
       },
-      "X": 0,
-      "Y": -2,
+      "X": 10,
+      "Y": 2,
       "Z": 0
     },
     "2": {
@@ -204,24 +390,10 @@
       "ControlPort": 139,
       "LocalHostIp": "172.30.16.1",
       "Cameras": {
-        "front-2": {
+        "front-center": {
           "CaptureSettings": [
             {
-              "ImageType": 0,
-              "Width": 1024,
-              "Height":576,
-              "FOV_Degrees": 90,
-              "AutoExposureSpeed": 100,
-              "AutoExposureBias": 0,
-              "AutoExposureMaxBrightness": 0.64,
-              "AutoExposureMinBrightness": 0.03,
-              "MotionBlurAmount": 0,
-              "TargetGamma": 1,
-              "ProjectionMode": "",
-              "OrthoWidth": 20
-            },
-            {
-              "ImageType": 2,
+              "ImageType": -1,
               "Width": 512,
               "Height":288,
               "FOV_Degrees": 90,
@@ -235,6 +407,20 @@
               "OrthoWidth": 10
             },
             {
+              "ImageType": 0,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "orthographic",
+              "OrthoWidth": 20
+            },
+            {
               "ImageType": 7,
               "Width": 512,
               "Height":288,
@@ -245,8 +431,54 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "",
+              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
+            }
+
+          ],
+          "Gimbal": {
+            "Stabilization": 1,
+            "Pitch": -90,
+            "Roll": 0,
+            "Yaw": 0
+          },
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0,
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+
+        },
+        "front": {
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 1024,
+              "Height":576,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
+            },
+            {
+              "ImageType": 5,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
             }
           ],
           "Gimbal": {
@@ -255,14 +487,57 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -45,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
           "Y": 0,
           "Z": 0
-
-        }
+          },
+      "right": {
+        "CaptureSettings": [
+          {
+            "ImageType": 0,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          },
+          {
+            "ImageType": 5,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          }
+        ],
+        "Gimbal": {
+          "Stabilization": 0,
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0
+        },
+        "Pitch": -45,
+        "Roll": 0,
+        "Yaw": 90,
+        "X": 1,
+        "Y": 0,
+        "Z": 0
+        }  
       },
       "Sensors": {
         "Distance": {
@@ -280,9 +555,9 @@
           "Pitch": 0,
           "Roll": 0,
           "DrawDebugPoints": false
-        }      
+        }
       },
-      "X": 0,
+      "X": 10,
       "Y": 0,
       "Z": 0
     },
@@ -296,24 +571,10 @@
       "ControlPort": 139,
       "LocalHostIp": "172.30.16.1",
       "Cameras": {
-        "front-3": {
+        "front-center": {
           "CaptureSettings": [
             {
-              "ImageType": 0,
-              "Width": 1024,
-              "Height":576,
-              "FOV_Degrees": 90,
-              "AutoExposureSpeed": 100,
-              "AutoExposureBias": 0,
-              "AutoExposureMaxBrightness": 0.64,
-              "AutoExposureMinBrightness": 0.03,
-              "MotionBlurAmount": 0,
-              "TargetGamma": 1,
-              "ProjectionMode": "",
-              "OrthoWidth": 20
-            },
-            {
-              "ImageType": 2,
+              "ImageType": -1,
               "Width": 512,
               "Height":288,
               "FOV_Degrees": 90,
@@ -327,6 +588,20 @@
               "OrthoWidth": 10
             },
             {
+              "ImageType": 0,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "orthographic",
+              "OrthoWidth": 20
+            },
+            {
               "ImageType": 7,
               "Width": 512,
               "Height":288,
@@ -337,8 +612,54 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "",
+              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
+            }
+
+          ],
+          "Gimbal": {
+            "Stabilization": 1,
+            "Pitch": -90,
+            "Roll": 0,
+            "Yaw": 0
+          },
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0,
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+
+        },
+        "front": {
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 1024,
+              "Height":576,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
+            },
+            {
+              "ImageType": 5,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "",
+              "OrthoWidth": 5.12
             }
           ],
           "Gimbal": {
@@ -347,14 +668,57 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -45,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
           "Y": 0,
           "Z": 0
-
-        }
+          },
+      "right": {
+        "CaptureSettings": [
+          {
+            "ImageType": 0,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          },
+          {
+            "ImageType": 5,
+            "Width": 512,
+            "Height":288,
+            "FOV_Degrees": 90,
+            "AutoExposureSpeed": 100,
+            "AutoExposureBias": 0,
+            "AutoExposureMaxBrightness": 0.64,
+            "AutoExposureMinBrightness": 0.03,
+            "MotionBlurAmount": 0,
+            "TargetGamma": 1,
+            "ProjectionMode": "",
+            "OrthoWidth": 5.12
+          }
+        ],
+        "Gimbal": {
+          "Stabilization": 0,
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0
+        },
+        "Pitch": -45,
+        "Roll": 0,
+        "Yaw": 90,
+        "X": 1,
+        "Y": 0,
+        "Z": 0
+        }  
       },
       "Sensors": {
         "Distance": {
@@ -374,11 +738,11 @@
           "DrawDebugPoints": false
         }
       },
-      "X": 0,
-      "Y": 2,
+      "X": 10,
+      "Y": -2,
       "Z": 0
     },
-    "4": {
+    "Overseer_0": {
       "VehicleType": "SimpleFlight",
       "EnableCollisions": true,
       "AllowAPIAlways": true,
@@ -388,24 +752,10 @@
       "ControlPort": 139,
       "LocalHostIp": "172.30.16.1",
       "Cameras": {
-        "front-4": {
+        "front-center": {
           "CaptureSettings": [
             {
-              "ImageType": 0,
-              "Width": 1024,
-              "Height":576,
-              "FOV_Degrees": 90,
-              "AutoExposureSpeed": 100,
-              "AutoExposureBias": 0,
-              "AutoExposureMaxBrightness": 0.64,
-              "AutoExposureMinBrightness": 0.03,
-              "MotionBlurAmount": 0,
-              "TargetGamma": 1,
-              "ProjectionMode": "",
-              "OrthoWidth": 20
-            },
-            {
-              "ImageType": 2,
+              "ImageType": -1,
               "Width": 512,
               "Height":288,
               "FOV_Degrees": 90,
@@ -419,6 +769,20 @@
               "OrthoWidth": 10
             },
             {
+              "ImageType": 0,
+              "Width": 512,
+              "Height":288,
+              "FOV_Degrees": 90,
+              "AutoExposureSpeed": 100,
+              "AutoExposureBias": 0,
+              "AutoExposureMaxBrightness": 0.64,
+              "AutoExposureMinBrightness": 0.03,
+              "MotionBlurAmount": 0,
+              "TargetGamma": 1,
+              "ProjectionMode": "orthographic",
+              "OrthoWidth": 20
+            },
+            {
               "ImageType": 7,
               "Width": 512,
               "Height":288,
@@ -429,20 +793,21 @@
               "AutoExposureMinBrightness": 0.03,
               "MotionBlurAmount": 0,
               "TargetGamma": 1,
-              "ProjectionMode": "",
+              "ProjectionMode": "orthographic",
               "OrthoWidth": 20
             }
+
           ],
           "Gimbal": {
-            "Stabilization": 0,
-            "Pitch": 0,
+            "Stabilization": 1,
+            "Pitch": -90,
             "Roll": 0,
             "Yaw": 0
           },
           "Pitch": 0,
           "Roll": 0,
           "Yaw": 0,
-          "X": 1,
+          "X": 0,
           "Y": 0,
           "Z": 0
 
@@ -466,8 +831,8 @@
           "DrawDebugPoints": false
         }
       },
-      "X": 0,
-      "Y": 4,
+      "X": 10,
+      "Y": 12,
       "Z": 0
     }
   },
@@ -522,21 +887,21 @@
         "CameraName": "front-0",
         "ImageType": 0,
         "VehicleName": "0",
-        "Visible": false
+        "Visible": true
       },
       {
         "WindowID": 1,
-        "CameraName": "front-1",
-        "ImageType": 0,
-        "VehicleName": "1",
-        "Visible": false
+        "CameraName": "front-0",
+        "ImageType": 2,
+        "VehicleName": "0",
+        "Visible": true
       },
       {
         "WindowID": 2,
-        "CameraName": "front-2",
-        "ImageType": 0,
-        "VehicleName": "2",
-        "Visible": false
+        "CameraName": "front-0",
+        "ImageType": 7,
+        "VehicleName": "0",
+        "Visible": true
       }
     ]
 }

@@ -120,8 +120,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 continue
         
     def create_mask(client, drone_name):
-        #camera_name = "front-" + drone_name
-        camera_name = "front_center"
+        camera_name = "front-" + drone_name
+        #camera_name = "front_center"
         img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
         depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
         print("Took infrared and depth images")
