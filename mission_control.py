@@ -204,10 +204,17 @@ def parentController():
     while True:
         websocket_data = fetch_websocket_data()
         if websocket_data:
-            print(f"Received UI WebSocket message: {websocket_data}")
+            #print(f"Received UI WebSocket message: {websocket_data}")
             json_data = json.loads(websocket_data)
             if json_data["MessageType"] == "StartSimulation":
                 break
+            elif json_data["MessageType"] == "StopSimulation":
+                print("Stopping simulation...")
+                target_found.value = True
+                exit(0)
+            else:
+                print("Unexpected startup message, exiting...")
+                exit(0)    
         time.sleep(1)
     
     print("Received!")
@@ -294,6 +301,10 @@ def parentController():
                             break
                     # fix the heap
                     heapq.heapify(waypoint_queue)
+                elif json_data["MessageType"] == "StopSimulation":
+                    print("Stopping simulation...")
+                    target_found.value = True # to stop the drones
+                    break                
                 else:
                     print("Unexpected message type")
 
@@ -314,7 +325,7 @@ def parentController():
                     SEND_TO_VLM_QUEUE.put(request)
 
                     # add the request id to the request dictionary
-                    request_dictionary[drone_name] = request_number
+                    request_dictionary[drone_name] = request_number # store the request number for the response
                     print(f"Request number {request_number} assigned to Drone {drone_name}")
                                     
 
@@ -481,12 +492,14 @@ def parentController():
             time.sleep(1)  # Give some time between cycles
         
     except KeyboardInterrupt:
-        for p in processes:
-            p.terminate()
+        print("KeyboardInterrupt detected. Shutting down...")
 
-        # Wait for all processes to finish
+    finally:
         for p in processes:
-            p.join(timeout=3) # Wait for at most 3 seconds for each process to finish
+            p.terminate()  # Ensure all processes are terminated
+
+        for p in processes:
+            p.join(timeout=3)  # Wait for up to 3 seconds for each process to finish
         
 
 
