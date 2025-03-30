@@ -130,7 +130,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
         cv2.waitKey(0)
         try:     
-            horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
+            horizontal = np.argwhere(mask)[4][1] # change the first [] to decide how many pixels it needs to see to move
             calculateDistance_angle(client, drone_name, mask, depth[0])
             return True
         except IndexError: #exceptions are for when there is nothing
@@ -401,7 +401,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print(f"[Drone {drone_name}] Current position: ", current_x, current_y, current_z)
 
-            #waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             print(f"[Drone {drone_name}] Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
