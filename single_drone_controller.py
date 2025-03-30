@@ -10,6 +10,7 @@ import base64
 import heapq
 import asyncio
 import math
+from stopwatch import Stopwatch
 
 
 from classes import Image
@@ -273,7 +274,32 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         time.sleep(1) #sleep to give it time
     
         
-        client.moveByVelocityBodyFrameAsync(7, 0, 0, distance / 7, vehicle_name=drone_name).join() # travels to the target
+        stopwatch = Stopwatch(2)
+        stopwatch.start()
+        client.moveByVelocityBodyFrameAsync(5,0,0,distance/5)
+        
+        while(stopwatch.duration<(distance /5)):
+
+            if (client.getDistanceSensorData(distance_sensor_name='Distance').distance<5 or client.getDistanceSensorData(distance_sensor_name='Distance2').distance<5):
+                state = client.getMultirotorState()
+                currentposition = state.kinematics_estimated.position
+
+            
+                stopwatch.stop()
+                print("moving up ")
+                client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-5 ,3, vehicle_name= drone).join()
+                #client.moveByVelocityZAsync(3,3,3,3).join()
+                print("done moving up ")
+
+                newdistance = distance - (5 * (stopwatch.duration))
+                stopwatch.start()
+                client.moveByVelocityBodyFrameAsync(5,0,0,newdistance/5) # travels to the target
+                #print("moving up")
+            
+        #client.moveByVelocityBodyFrameAsync(5,0,0,distance/5).join() # travels to the target
+        #if i need to collision avodiance
+        stopwatch.stop()
+        stopwatch.reset()
         state = client.getMultirotorState(vehicle_name=drone_name)
         currentposition = state.kinematics_estimated.position
         #print(currentposition)
