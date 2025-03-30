@@ -54,6 +54,7 @@ target_found = None                 # global variable to stop the search loop wh
 searched_areas_dictionary = None    # dictionary mapping waypoint names to their locations that have been searched already
 image_queue = None                  # queue to store images waiting to be processed
 waypoint_queue = None               # priority queue to store waypoints
+img_dir = None                      # directory to store images
 
 # Keep processes and threads global to avoid early shutdown
 drone_controller_processes = []
@@ -401,21 +402,27 @@ def process_image_queue():
         image = image_queue.get() # base64 image
         print(f"[Parent] Received Image from Drone {image.drone_id}")
 
+        # reconstruct the image from the base64 string || TODO: Don't save the image to disk here, but rather from the drone
+        image_path = os.path.join(img_dir, f"drone_{image.drone_id}", f"waypoint_{image.waypoint_name}_{image.image_type}.png")
+        reconstruct_image_from_base64(image.image, image_path)
+
+
         if TEST_VLM:
             print(f"[Parent] Sending image to VLM model for analysis...")
-            message_history.append({
-                'role': 'user',
-                'content': "Analyze this image and determine if a person is present or not. Set human_present_in_image to True if a human is present.",
-                'images': [image.image]
-            })
 
             try:
                 response = chat(
-                    messages=message_history,
+                    messages = [{
+                    'role': 'user',
+                    'content': "Please analyze this image and set human_present_in_image to True if a human is present.",
+                    'image': [image_path]
+                    }],
                     model=MODEL,
                     format = VLMOutput.model_json_schema(),
-                    timeout=30
                 )
+
+                response = VLMOutput.model_validate_json(response.message.content)
+                print(f"[Parent] VLM model response: {response}")
 
             except:
                 ...
@@ -449,8 +456,11 @@ def loop():
     
 
 def start_parent_controller(drone_count: int, shutdown_event):
-
+    
     try:
+        global img_dir
+        img_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
+
         initialize(drone_count, shutdown_event)
         perform_startup_sequence()
         receive_initial_waypoints()
