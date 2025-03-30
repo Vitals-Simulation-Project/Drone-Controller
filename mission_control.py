@@ -326,14 +326,15 @@ def parentController():
         #     f"Do not assign to drones that were not mentioned in the list of current positions."
         # )
         request = (
-            f"Assign an initial target waypoint to each drone based on proximity. "
-            f"There are {DRONE_COUNT} drones. The available waypoints 'waypoint name' (coordinates) are: {waypoint_queue_str}. "
-            f"Each waypoint must come from this queue. " 
+            f"Assign an initial waypoint to each drone. "
+            f"There are {DRONE_COUNT} drones. The available waypoints in the format 'waypoint name' (coordinates) are: {waypoint_queue_str}. "
+            f"Each waypoint must come from this list. " 
             f"Only assign each waypoint to a single drone. Do NOT assign the same waypoint to multiple drones. "
             f"Assign waypoints to drones closest to them using their current positions 'drone_name' (coordinates): {position_str}. "
             f"Only assign waypoints to drones listed in the current positions. "
-            f"Return the assignments as 'assigned_target_dictionary' in the format: {{drone_id: waypoint_id}} where drone_id and waypoint_id are both integers. Each waypoint_id must be unique and you must assign to each drone."
-            f"If there are not enough drones, assign the first {DRONE_COUNT} waypoints to the drones. "
+            f"Return the assignments as 'assigned_target_dictionary' in the format: {{drone_id: waypoint_id}} where drone_id and waypoint_id are both integers. "
+            f"Each waypoint_id must be a unique integer and you must assign to each drone. "
+            # f"If there are not enough drones, assign the first {DRONE_COUNT} waypoints to the drones. "
         )
 
         print(f"Sending request to VLM model: {request}")         
