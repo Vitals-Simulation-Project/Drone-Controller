@@ -20,7 +20,7 @@ def pull_model(model):
 def load_model(MODEL):
     # pull the model
     if pull_model(MODEL) == "success":
-        print("Model successfully pulled.")        
+        print("Model successfully loaded.")        
     else:
         print("Model pull failed. Exiting...")
         

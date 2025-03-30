@@ -32,17 +32,6 @@ CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
 
-# Enables api control, takes off drone, returns the client
-def takeOff(drone_name):
-    client = airsim.MultirotorClient(local_config.LOCAL_IP)
-    client.confirmConnection()
-    client.enableApiControl(True, drone_name)
-    client.armDisarm(True, drone_name)
-    client.takeoffAsync(vehicle_name=drone_name).join()
-
-    # print("Drone " + drone_name + " is ready to fly")
-
-    return client
 
 
 
@@ -50,11 +39,25 @@ def takeOff(drone_name):
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary):
     """ Drone process that listens for movement commands and sends status updates. """
     
-    # Initialize AirSim client and take off
-    client = takeOff(drone_name)
+
+    # Enables api control, takes off drone, returns the client
+    def takeOff(drone_name):
+        client = airsim.MultirotorClient(local_config.LOCAL_IP)
+        client.confirmConnection()
+        client.enableApiControl(True, drone_name)
+        client.armDisarm(True, drone_name)
+        client.takeoffAsync(vehicle_name=drone_name).join()
+
+        # print("Drone " + drone_name + " is ready to fly")
+        status_dictionary[drone_name] = "IDLE"
+
+        return client
+
+
+
 
 
     def take_forward_picture(drone_name, image_type):
@@ -117,8 +120,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 continue
         
     def create_mask(client, drone_name):
-        #camera_name = "front-" + drone_name
-        camera_name = "front_center"
+        camera_name = "front-" + drone_name
+        #camera_name = "front_center"
         img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
         depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
         print("Took infrared and depth images")
@@ -289,6 +292,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
 
+    # Initialize AirSim client and take off
+    client = takeOff(drone_name)
+
 
     while not target_found.value:
         current_target = current_target_dictionary[drone_name]
@@ -327,8 +333,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
                 #print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                 if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_FORWARD_DISTANCE):
-                    print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
-                    print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE)
+                    #print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
+                    #print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE)
                     #gpsData = drone_state.gps_location
                     #client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+5, VELOCITY / 2, vehicle_name=drone_name).join()
                     # move z up
@@ -344,9 +350,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
                 # Check if the drone is close enough to the target (within a small threshold)
-                distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2)**0.5
-                #print("Distance to target: ", distance)
-                if distance < 5.0:  # 5-meter tolerance
+                x_distance = abs(current_x - waypoint_x)
+                y_distance = (current_y - waypoint_y)
+                #print("Distance to target: ", (x_distance**2 + y_distance**2)**0.5)
+                if x_distance < 10 and y_distance < 5:
                     move_future.join()
                     print(f"Drone {drone_name} reached the target")
                     break
@@ -367,7 +374,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print("Current position: ", current_x, current_y, current_z)
 
-            waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            #waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             #print("Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
@@ -386,7 +393,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         else:
             print(f"Drone {drone_name} is waiting for commands.")
-            status_dictionary[drone_name] = "IDLE"
+            current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
+            current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
+            #print("Current position: ", current_position_dictionary[drone_name])
+            #status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 
 
