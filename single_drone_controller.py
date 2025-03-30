@@ -10,7 +10,7 @@ import base64
 import heapq
 import asyncio
 import math
-from stopwatch import Stopwatch
+from stopwatch import Stopwatch # type: ignore
 
 
 from classes import Image
@@ -24,7 +24,7 @@ MIN_FORWARD_DISTANCE = 15
 VELOCITY = 15
 
 WAYPOINT_ALTITUDE = -15            # Fixed altitude (negative for AirSim)
-WAYPOINT_SIDE_LENGTH = 10          # Square size
+WAYPOINT_SIDE_LENGTH = 20          # Square size
 WAYPOINT_SPEED = 8                 # Speed (m/s)
 
 CONFIRM_TARGET_ALTITUDE = -10      # Fixed altitude (negative for AirSim)
@@ -103,8 +103,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 vehicle_name=drone_name  
             ).join()
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, center_x, center_y), vehicle_name=drone_name).join() #rotate to center
-            client.hoverAsync(vehicle_name=drone_name)
-            time.sleep(3)
+            client.hoverAsync(vehicle_name=drone_name).join()
+            time.sleep(5)
             
             if (create_mask(client, drone_name) == True): # take pictures
                 print(f"[Drone {drone_name}] Target found")
@@ -130,7 +130,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
         cv2.waitKey(0)
         try:     
-            horizontal = np.argwhere(mask)[4][1] # change the first [] to decide how many pixels it needs to see to move
+            horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
             calculateDistance_angle(client, drone_name, mask, depth[0])
             return True
         except IndexError: #exceptions are for when there is nothing
@@ -162,17 +162,17 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, center_x, center_y), vehicle_name=drone_name).join()  
             client.hoverAsync(vehicle_name=drone_name)
-            time.sleep(3)
+            time.sleep(5)
 
             # go down to 10 meters above ground
-            while client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance > 10:
-                # get current position
-                drone_state = client.getMultirotorState(vehicle_name=drone_name)
-                drone_position = drone_state.kinematics_estimated.position
-                print(f"[Drone {drone_name} Current altitude: ", drone_position.z_val)
-                new_z = drone_position.z_val + 3
-                client.moveToZAsync(z=new_z, velocity=5, vehicle_name=drone_name).join()
-                time.sleep(0.5)
+            # while client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance > 10:
+            #     # get current position
+            #     drone_state = client.getMultirotorState(vehicle_name=drone_name)
+            #     drone_position = drone_state.kinematics_estimated.position
+            #     print(f"[Drone {drone_name} Current altitude: ", drone_position.z_val)
+            #     new_z = drone_position.z_val + 3
+            #     client.moveToZAsync(z=new_z, velocity=5, vehicle_name=drone_name).join()
+            #     time.sleep(0.5)
 
             time.sleep(1)
             print(f"[Drone {drone_name}] Taking picture for vlm")
@@ -279,7 +279,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             
                 stopwatch.stop()
                 print("moving up ")
-                client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-5 ,3, vehicle_name= drone).join()
+                client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-5 ,3, vehicle_name= drone_name).join()
                 #client.moveByVelocityZAsync(3,3,3,3).join()
                 print("done moving up ")
 
@@ -339,9 +339,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                     # interrupt movement with hover
                     client.hoverAsync().join()
 
+                    current_target.priority = 2 # set the target to a slightly higher priority
+
                     # push the original target back to the queue to be revisited later
                     heapq.heappush(waypoint_queue, current_target)
                     print(f"Drone {drone_name} pushed target {current_target.name} back to the queue")
+
                     FINISHED_SEARCH = False
                     break
 
@@ -398,7 +401,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print(f"[Drone {drone_name}] Current position: ", current_x, current_y, current_z)
 
-            # waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            #waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
             print(f"[Drone {drone_name}] Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
@@ -420,7 +423,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
             current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
             #print("Current position: ", current_position_dictionary[drone_name])
-            #status_dictionary[drone_name] = "IDLE"
+            status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 
     print(f"[Drone {drone_name}] Shutting down")

@@ -228,32 +228,32 @@ def send_target_update():
 def assign_waypoints():
     '''If drone is WAITING, assign a waypoint from queue'''
 
-    # peek at the first waypoint to see if it's user added
-    if len(waypoint_queue) > 0:        
-        next_waypoint = waypoint_queue[0]
-        #print(f"[Parent] Next Waypoint: {next_waypoint.name} with priority {next_waypoint.priority}")
-        if next_waypoint.priority == 1:
-            #print(f"[Parent] User added waypoint {next_waypoint.name} to the queue")
+    # # peek at the first waypoint to see if it's user added
+    # if len(waypoint_queue) > 0:        
+    #     next_waypoint = waypoint_queue[0]
+    #     #print(f"[Parent] Next Waypoint: {next_waypoint.name} with priority {next_waypoint.priority}")
+    #     if next_waypoint.priority == 1:
+    #         #print(f"[Parent] User added waypoint {next_waypoint.name} to the queue")
 
-            # find the closest drone to the waypoint
-            closest_drone = None
-            closest_distance = float("inf")
-            for drone_name in current_position_dictionary:
-                drone_position = current_position_dictionary[drone_name]
-                if drone_position and status_dictionary[drone_name] != "SEARCHING" and current_target_dictionary[drone_name].priority > 1:
-                    distance = (drone_position[0] - next_waypoint.x) ** 2 + (drone_position[1] - next_waypoint.y) ** 2 + (drone_position[2] - next_waypoint.z) ** 2
-                    distance = distance ** 0.5 # euclidean distance
-                    if distance < closest_distance:
-                        closest_distance = distance
-                        closest_drone = drone_name
+    #         # find the closest drone to the waypoint
+    #         closest_drone = None
+    #         closest_distance = float("inf")
+    #         for drone_name in current_position_dictionary:
+    #             drone_position = current_position_dictionary[drone_name]
+    #             if drone_position and status_dictionary[drone_name] != "SEARCHING" and current_target_dictionary[drone_name].priority > 1:
+    #                 distance = (drone_position[0] - next_waypoint.x) ** 2 + (drone_position[1] - next_waypoint.y) ** 2 + (drone_position[2] - next_waypoint.z) ** 2
+    #                 distance = distance ** 0.5 # euclidean distance
+    #                 if distance < closest_distance:
+    #                     closest_distance = distance
+    #                     closest_drone = drone_name
             
-            print(f"The closest drone to waypoint {next_waypoint.name} is {closest_drone} with a distance of {closest_distance}m")
-            if closest_drone:
-                current_target_dictionary[closest_drone] = next_waypoint
-                status_dictionary[closest_drone] = "MOVING"
-                print(f"[Drone {closest_drone}] reassigned to waypoint: {next_waypoint.name}")
-                del waypoint_queue[0] # remove the waypoint from the queue
-                heapq.heapify(waypoint_queue) # fix the heap
+    #         print(f"The closest drone to waypoint {next_waypoint.name} is {closest_drone} with a distance of {closest_distance}m")
+    #         if closest_drone:
+    #             current_target_dictionary[closest_drone] = next_waypoint
+    #             status_dictionary[closest_drone] = "MOVING"
+    #             print(f"[Drone {closest_drone}] reassigned to waypoint: {next_waypoint.name}")
+    #             del waypoint_queue[0] # remove the waypoint from the queue
+    #             heapq.heapify(waypoint_queue) # fix the heap
 
 
     for drone_name in status_dictionary:    

@@ -487,6 +487,7 @@
           "AutoExposureMaxBrightness": 0.64,
           "AutoExposureMinBrightness": 0.03,
           "MotionBlurAmount": 0,
+          "IgnoreMarked": false,
           "TargetGamma": 1.0,
           "ProjectionMode": "",
           "OrthoWidth": 5.12
@@ -526,16 +527,16 @@
       },
       {
         "WindowID": 1,
-        "CameraName": "front-1",
-        "ImageType": 0,
-        "VehicleName": "1",
+        "CameraName": "front-0",
+        "ImageType": 2,
+        "VehicleName": "0",
         "Visible": false
       },
       {
         "WindowID": 2,
-        "CameraName": "front-2",
-        "ImageType": 0,
-        "VehicleName": "2",
+        "CameraName": "front-0",
+        "ImageType": 7,
+        "VehicleName": "0",
         "Visible": false
       }
     ]
