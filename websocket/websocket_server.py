@@ -45,7 +45,11 @@ async def start():
 
 def start_websocket_server():
     '''Starts the websocket server in an asyncio event loop'''
-    
-    server_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(server_loop)
-    server_loop.run_until_complete(start())
+
+    try:
+        server_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(server_loop)
+        server_loop.run_until_complete(start())
+        
+    except KeyboardInterrupt:
+        ...

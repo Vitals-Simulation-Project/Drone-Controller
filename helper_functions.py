@@ -1,5 +1,6 @@
 import base64
 import geopy.distance # type: ignore
+import math
 
 def reconstruct_image_from_base64(base64_string, output_path):
     try:
@@ -29,3 +30,29 @@ def unreal_to_gps(ue_x, ue_y, ue_z, home_gps):
     #new_alt = home_alt - ue_z  
 
     return new_lat, new_lon, ue_z
+
+def to_eularian_angles(q): # takes eularian's and give pitch roll yaw
+    z = q.z_val
+    y = q.y_val
+    x = q.x_val
+    w = q.w_val
+    ysqr = y * y
+
+    # roll (x-axis rotation)
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + ysqr)
+    roll = math.atan2(t0, t1)
+
+    # pitch (y-axis rotation)
+    t2 = +2.0 * (w * y - z * x)
+    t2 = max(min(t2, 1.0), -1.0)  # Clamp t2 to the range [-1, 1]
+    pitch = math.asin(t2)
+
+    # yaw (z-axis rotation)
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (ysqr + z * z)
+    yaw = math.atan2(t3, t4)
+
+    yaw = yaw * (180/ math.pi)
+
+    return (roll, pitch, yaw)  # Standard order: roll, pitch, yaw

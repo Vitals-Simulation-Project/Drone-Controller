@@ -56,13 +56,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         return client
 
-
-
-
-
     def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
-        print(f"Taking picture from {camera_name}, type of {image_type}")
+        print(f"[Drone {drone_name}] Taking picture from {camera_name}, type of {image_type}")
         response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
         
         filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
@@ -84,9 +80,6 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     
         return base64_image  
     
-
-
-    
     def waypoint_search(client, drone_name, center_x, center_y, side_length, altitude, speed):
         global running
 
@@ -101,7 +94,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         ]
 
         for x, y in square_corners: 
-            print("Going to waypoint: ", x, y)
+            print(f"[Drone {drone_name}] Going to Waypoint Corner: ", x, y)
             client.moveToPositionAsync(
                 x, y, altitude, speed,
                 drivetrain=airsim.DrivetrainType.ForwardOnly,
@@ -113,10 +106,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             time.sleep(3)
             
             if (create_mask(client, drone_name) == True): # take pictures
-                print("Target found")
+                print(f"[Drone {drone_name}] Target found")
                 return
             else:
-                print("Target not found")
+                print(f"[Drone {drone_name}] Target not found")
                 continue
         
     def create_mask(client, drone_name):
@@ -124,7 +117,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         #camera_name = "front_center"
         img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
         depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
-        print("Took infrared and depth images")
+        print(f"[Drone {drone_name}] Took infrared and depth images")
         img1d = np.frombuffer(img, dtype=np.uint8)  # this section is creating the black and white mask to outline anything in the infared
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
         hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
@@ -145,7 +138,6 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             bool = create_mask(client, drone_name)
             return bool
 
-        
     def confirm_target_search(client, drone_name, center_x, center_y, side_length, altitude, speed):
         global running
         
@@ -176,18 +168,16 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 # get current position
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 drone_position = drone_state.kinematics_estimated.position
-                print("Current altitude: ", drone_position.z_val)
+                print(f"[Drone {drone_name} Current altitude: ", drone_position.z_val)
                 new_z = drone_position.z_val + 3
                 client.moveToZAsync(z=new_z, velocity=5, vehicle_name=drone_name).join()
                 time.sleep(0.5)
 
             time.sleep(1)
-            print("Taking picture for vlm")
+            print(f"[Drone {drone_name}] Taking picture for vlm")
             # take photo for vlm to analyze
             base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
             image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
-
-
 
     def get_yaw_angle_to_target(client, drone_name, x, y): # this gets the drone to face the center of the search
         drone_state = client.getMultirotorState(vehicle_name=drone_name)
@@ -200,7 +190,6 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         yaw_deg = math.degrees(yaw) % 360
 
         return yaw_deg
-
 
     def calculateDistance_angle(client, drone_name, mask, depthPerspective):
         client.hoverAsync(vehicle_name=drone_name)
@@ -271,7 +260,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             angle = abs(angle -45)
             yaw = yaw - angle
     
-        print("rotating to yaw: ", yaw)
+        print(f"[Drone {drone_name}] Rotating to yaw: ", yaw)
         client.rotateToYawAsync(yaw, vehicle_name=drone_name).join()  #rotate to the target
         time.sleep(1) #sleep to give it time
     
@@ -300,21 +289,21 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         current_target = current_target_dictionary[drone_name]
 
         if current_target is not None:
+            status_dictionary[drone_name] = "MOVING"
             waypoint_name = current_target.name
             waypoint_lat, waypoint_lon, waypoint_alt = unreal_to_gps(current_target.x, current_target.y, current_target.z, client.getHomeGeoPoint())
             waypoint_x = current_target.x
             waypoint_y = current_target.y
             waypoint_z = current_target.z
 
-            print(f"Drone {drone_name} is moving to {waypoint_name}")
-            print("Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
-            print("Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
+            print(f"[Drone {drone_name}] Moving to Waypoint {waypoint_name}")
+            # print(f"[Drone {drone_name}] Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
+            # print(f"[Drone {drone_name}] Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
 
-            print("Rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
+            # print(f"[Drone {drone_name}] Rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
 
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
-            status_dictionary[drone_name] = "MOVING"
 
             while True:
                 # if current_target_dictionary[drone_name] != original_target: (TODO: Fix and test this)
@@ -355,27 +344,27 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 #print("Distance to target: ", (x_distance**2 + y_distance**2)**0.5)
                 if x_distance < 10 and y_distance < 5:
                     move_future.join()
-                    print(f"Drone {drone_name} reached the target")
+                    print(f"[Drone {drone_name}] Reached target")
                     break
                 else:
                     move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
 
                 time.sleep(1)
             status_dictionary[drone_name] = "SEARCHING"
-            print(f"Drone {drone_name} arrived and is searching {waypoint_name}")
+            print(f"[Drone {drone_name}] Arrived and Searching {waypoint_name}")
 
             # hover for 5 seconds
             client.hoverAsync(vehicle_name=drone_name).join()
             time.sleep(5)
 
-            print("Calling search function")
+            print(f"[Drone {drone_name}] Calling search function")
             drone_state = client.getMultirotorState(vehicle_name=drone_name)
             position = drone_state.kinematics_estimated.position
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
-            print("Current position: ", current_x, current_y, current_z)
+            print(f"[Drone {drone_name}] Current position: ", current_x, current_y, current_z)
 
-            waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
-            print("Search function finished")
+            # waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            print(f"[Drone {drone_name}] Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
