@@ -14,7 +14,7 @@ class Waypoint:
         self.priority = priority
 
     def __lt__(self, other):
-        return self.priority > other.priority 
+        return self.priority < other.priority 
 
 
 # Image class to store the drone ID, image type, and image data

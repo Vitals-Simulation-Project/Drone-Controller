@@ -284,9 +284,11 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     # Initialize AirSim client and take off
     client = takeOff(drone_name)
 
+    FINISHED_SEARCH = False # flag to indicate if the drone successfully searched an area
 
-    while not target_found.value and SHUTDOWN_EVENT.is_set():
+    while not target_found.value and not SHUTDOWN_EVENT.is_set():
         current_target = current_target_dictionary[drone_name]
+        print(f"[Drone {drone_name}] Current target: ", current_target.name if current_target is not None else "None")
 
         if current_target is not None:
             status_dictionary[drone_name] = "MOVING"
@@ -306,14 +308,16 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
 
             while True:
-                # if current_target_dictionary[drone_name] != original_target: (TODO: Fix and test this)
-                #     print(f"Drone {drone_name} received a new target while moving to {waypoint_name}")
-                #     # interrupt movement with hover
-                #     client.hoverAsync().join()
+                if current_target_dictionary[drone_name].name != current_target.name: 
+                    print(f"Drone {drone_name} received a new target while moving to {waypoint_name}, new target is {current_target_dictionary[drone_name].name}")
+                    # interrupt movement with hover
+                    client.hoverAsync().join()
 
-                #     # push the original target back to the queue to be revisited later
-                #     heapq.heappush(waypoint_queue, original_target)
-                #     break
+                    # push the original target back to the queue to be revisited later
+                    heapq.heappush(waypoint_queue, current_target)
+                    print(f"Drone {drone_name} pushed target {current_target.name} back to the queue")
+                    FINISHED_SEARCH = False
+                    break
 
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
@@ -341,15 +345,20 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 # Check if the drone is close enough to the target (within a small threshold)
                 x_distance = abs(current_x - waypoint_x)
                 y_distance = (current_y - waypoint_y)
-                #print("Distance to target: ", (x_distance**2 + y_distance**2)**0.5)
                 if x_distance < 10 and y_distance < 5:
                     move_future.join()
                     print(f"[Drone {drone_name}] Reached target")
+                    FINISHED_SEARCH = True
                     break
                 else:
                     move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
 
                 time.sleep(1)
+
+
+            if not FINISHED_SEARCH: # handles if the drone was interrupted while moving to the target
+                continue
+
             status_dictionary[drone_name] = "SEARCHING"
             print(f"[Drone {drone_name}] Arrived and Searching {waypoint_name}")
 

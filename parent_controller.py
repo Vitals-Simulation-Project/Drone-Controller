@@ -16,6 +16,7 @@ import requests
 import threading
 import time
 import websockets
+import geopy.distance # type: ignore
 
 # Project Imports
 from classes import Image, VLMOutput, Waypoint
@@ -192,7 +193,7 @@ def initialize_drone_controller(id):
 
     send_to_ui(json.dumps(drone_state_message))
 
-    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary), daemon=True)
+    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT), daemon=True)
     process.start()
     drone_controller_processes.append(process)
 
@@ -214,9 +215,9 @@ def loop():
         delete_searched_waypoints()
         process_image_queue()
 
-        # print the status of the waypoint queue
-        print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
-        print(f"Received UI queue: {[item for item in RECEIVED_UI_DATA_QUEUE.queue]}")
+        
+        #print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
+        #print(f"Received UI queue: {[item for item in RECEIVED_UI_DATA_QUEUE.queue]}")
         time.sleep(1)
 
 
@@ -249,8 +250,35 @@ def send_target_update():
 def assign_waypoints():
     '''If drone is WAITING, assign a waypoint from queue'''
 
-    for drone_name in status_dictionary:
+    # peek at the first waypoint to see if it's user added
+    if len(waypoint_queue) > 0:        
+        next_waypoint = waypoint_queue[0]
+        #print(f"[Parent] Next Waypoint: {next_waypoint.name} with priority {next_waypoint.priority}")
+        if next_waypoint.priority == 1:
+            #print(f"[Parent] User added waypoint {next_waypoint.name} to the queue")
 
+            # find the closest drone to the waypoint
+            closest_drone = None
+            closest_distance = float("inf")
+            for drone_name in current_position_dictionary:
+                drone_position = current_position_dictionary[drone_name]
+                if drone_position and status_dictionary[drone_name] != "SEARCHING" and current_target_dictionary[drone_name].priority > 1:
+                    distance = (drone_position[0] - next_waypoint.x) ** 2 + (drone_position[1] - next_waypoint.y) ** 2 + (drone_position[2] - next_waypoint.z) ** 2
+                    distance = distance ** 0.5 # euclidean distance
+                    if distance < closest_distance:
+                        closest_distance = distance
+                        closest_drone = drone_name
+            
+            print(f"The closest drone to waypoint {next_waypoint.name} is {closest_drone} with a distance of {closest_distance}m")
+            if closest_drone:
+                current_target_dictionary[closest_drone] = next_waypoint
+                status_dictionary[closest_drone] = "MOVING"
+                print(f"[Drone {closest_drone}] reassigned to waypoint: {next_waypoint.name}")
+                del waypoint_queue[0] # remove the waypoint from the queue
+                heapq.heapify(waypoint_queue) # fix the heap
+
+
+    for drone_name in status_dictionary:    
         if status_dictionary[drone_name] == "WAITING" or status_dictionary[drone_name] == "IDLE":
             if len(waypoint_queue) > 0:
                 next_waypoint = heapq.heappop(waypoint_queue)
@@ -363,7 +391,7 @@ def process_websocket_message(websocket_data):
             # divide by 100 to convert from cm to m
             waypoint = Waypoint(json_data["WaypointID"], json_data["X"] / 100, json_data["Y"] / 100, json_data["Z"] / 100, json_data["Priority"])
             heapq.heappush(waypoint_queue, waypoint)
-            print(f"\n[OVERRIDE] Added waypoint {waypoint.name} to the queue\n")
+            print(f"\n[OVERRIDE] Added waypoint {waypoint.name} to the queue with priority {waypoint.priority}\n")
 
         elif json_data["MessageType"] == "DeleteWaypoint":
 
