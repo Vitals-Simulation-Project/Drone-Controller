@@ -199,29 +199,7 @@ def initialize_drone_controller(id):
 
     print(f"[Drone {drone_name}] Initializing")
 
-def loop():
-    '''Perform loop until end of simulation'''
 
-    print("[Parent] Entering Loop")
-
-    while not SHUTDOWN_EVENT.is_set() and not target_found.value:
-        
-        websocket_data = fetch_websocket_data()
-        process_websocket_message(websocket_data)
-
-        assign_waypoints()
-        send_status_update()
-        send_target_update()
-        delete_searched_waypoints()
-        process_image_queue()
-
-        
-        #print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
-        #print(f"Received UI queue: {[item for item in RECEIVED_UI_DATA_QUEUE.queue]}")
-        time.sleep(1)
-
-
-    print("[Parent] Exiting Loop")
 
 
 def send_to_ui(message):
@@ -442,6 +420,33 @@ def process_image_queue():
             except:
                 ...
 
+
+
+def loop():
+    '''Perform loop until end of simulation'''
+
+    print("[Parent] Entering Loop")
+
+    while not SHUTDOWN_EVENT.is_set() and not target_found.value:
+        
+        websocket_data = fetch_websocket_data()
+        process_websocket_message(websocket_data)
+
+        assign_waypoints()
+        send_status_update()
+        send_target_update()
+        delete_searched_waypoints()
+        process_image_queue()
+
+        
+        #print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
+        #print(f"Received UI queue: {[item for item in RECEIVED_UI_DATA_QUEUE.queue]}")
+        time.sleep(1)
+
+
+    print("[Parent] Exiting Loop")
+
+    
 
 def start_parent_controller(drone_count: int, shutdown_event):
 
