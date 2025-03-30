@@ -273,15 +273,17 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         time.sleep(1) #sleep to give it time
     
         
-        client.moveByVelocityBodyFrameAsync(5, 0, 0, distance / 5, vehicle_name=drone_name).join() # travels to the target
-    
+        client.moveByVelocityBodyFrameAsync(7, 0, 0, distance / 7, vehicle_name=drone_name).join() # travels to the target
         state = client.getMultirotorState(vehicle_name=drone_name)
         currentposition = state.kinematics_estimated.position
         #print(currentposition)
         time.sleep(1) # gives time to stop
 
-    
-        confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
+        if( distance > 80):
+            #print("to far doing a waypoint")
+            waypoint_search(client,currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
+        else:
+            confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
     
 
 
