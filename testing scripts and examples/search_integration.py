@@ -4,7 +4,7 @@ import os
 import numpy as np
 import cv2
 import math
-from stopwatch import Stopwatch
+from stopwatch import Stopwatch # type: ignore
 
 client = airsim.MultirotorClient()
 client.confirmConnection()
@@ -68,8 +68,8 @@ def create_mask():
     upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
     mask = cv2.inRange(hsv, lower, upper)   
-    #cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
-    #cv2.waitKey(0)
+    cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
+    cv2.waitKey(0)
     try:     
         horizontal = np.argwhere(mask)[3][1] # change the first [] to decide how many pixels it needs to see to move
         calculateDistance_angle(mask,depth[0])
@@ -105,7 +105,8 @@ def confirm_target_search(client, center_x, center_y, side_length, altitude, spe
         client.hoverAsync()
         time.sleep(3)
         
-       #take photo here / VLM integration
+        #take photo here / VLM integration
+        print("taking photo")
 
 
 def get_yaw_angle_to_target(client, x,y): # this gets the drone to face the center of the search

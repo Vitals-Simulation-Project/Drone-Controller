@@ -284,7 +284,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         if( distance > 80):
             #print("to far doing a waypoint")
-            waypoint_search(client,currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
+            waypoint_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
         else:
             confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
     
@@ -374,8 +374,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print("Current position: ", current_x, current_y, current_z)
 
-            #waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
-            #print("Search function finished")
+            waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            print("Search function finished")
             # Take a picture
             # base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
 
