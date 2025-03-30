@@ -331,8 +331,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
                 #print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                 if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_FORWARD_DISTANCE):
-                    print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
-                    print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE)
+                    #print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
+                    #print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE)
                     #gpsData = drone_state.gps_location
                     #client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+5, VELOCITY / 2, vehicle_name=drone_name).join()
                     # move z up
@@ -350,7 +350,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 # Check if the drone is close enough to the target (within a small threshold)
                 x_distance = abs(current_x - waypoint_x)
                 y_distance = (current_y - waypoint_y)
-                print("Distance to target: ", (x_distance**2 + y_distance**2)**0.5)
+                #print("Distance to target: ", (x_distance**2 + y_distance**2)**0.5)
                 if x_distance < 10 and y_distance < 5:
                     move_future.join()
                     print(f"Drone {drone_name} reached the target")
@@ -393,7 +393,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             print(f"Drone {drone_name} is waiting for commands.")
             current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
             current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
-            print("Current position: ", current_position_dictionary[drone_name])
+            #print("Current position: ", current_position_dictionary[drone_name])
             #status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 

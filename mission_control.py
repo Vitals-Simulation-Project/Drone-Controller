@@ -41,7 +41,7 @@ request_number = 1 # the next request number to be assigned
 WEBSOCKET_CLIENT = None # Global websocket client 
 
 
-DRONE_COUNT = 1
+DRONE_COUNT = 5
 
 TEST_VLM = True # set to True if testing the VLM model, False if not
 RELEASE_BUILD = True # set to True if running the executable, False if running in editor mode
@@ -281,6 +281,16 @@ def parentController():
     while not all(status == "IDLE" for status in status_dictionary.values()):       
         print("Waiting for all drones to take off...")
         time.sleep(5)
+    
+    # send to ui that all drones are ready
+    for drone_name in status_dictionary:
+        status_data = {
+            "MessageType": "UpdateDroneState",
+            "DroneID": int(drone_name),
+            "State": status_dictionary[drone_name]
+        }
+        send_to_ui(json.dumps(status_data))
+
 
 
 
@@ -288,7 +298,14 @@ def parentController():
     # give each drone their initial target waypoint from the VLM
     if TEST_VLM and len(waypoint_queue) >= DRONE_COUNT:
         # change drone state to be waiting for waypoint to be assigned
-        status_dictionary[drone_name] = "WAITING"
+        for drone_name in status_dictionary:
+            status_dictionary[drone_name] = "WAITING"
+            status_data = {
+                "MessageType": "UpdateDroneState",
+                "DroneID": int(drone_name),
+                "State": status_dictionary[drone_name]
+            }
+            send_to_ui(json.dumps(status_data))
 
 
         # ask the VLM model for the next waypoint to be assigned
@@ -311,10 +328,11 @@ def parentController():
         request = (
             f"Assign an initial target waypoint to each drone based on proximity. "
             f"There are {DRONE_COUNT} drones. The available waypoints 'waypoint name' (coordinates) are: {waypoint_queue_str}. "
-            f"Each waypoint must come from this queue. "
+            f"Each waypoint must come from this queue. " 
+            f"Only assign each waypoint to a single drone. Do NOT assign the same waypoint to multiple drones. "
             f"Assign waypoints to drones closest to them using their current positions 'drone_name' (coordinates): {position_str}. "
             f"Only assign waypoints to drones listed in the current positions. "
-            f"Return the assignments as 'assigned_target_dictionary' in the format: {{drone_id: waypoint_id}}."
+            f"Return the assignments as 'assigned_target_dictionary' in the format: {{drone_id: waypoint_id}} where drone_id and waypoint_id are both integers. Each waypoint_id must be unique and you must assign to each drone."
             f"If there are not enough drones, assign the first {DRONE_COUNT} waypoints to the drones. "
         )
 
@@ -352,7 +370,11 @@ def parentController():
             print(f"VLM Error: There is no drone with the ID: {drone_name}")
             continue
 
-        assigned_target = int(response.assigned_target_dictionary[drone_name])
+        try:
+            assigned_target = int(response.assigned_target_dictionary[drone_name])
+        except ValueError:
+            print(f"VLM Error: Assigned target {response.assigned_target_dictionary[drone_name]} is not a number")
+            continue
         for i, wp in enumerate(waypoint_queue):
             if wp.name == assigned_target:
                 assigned_target = wp
@@ -366,11 +388,13 @@ def parentController():
                 current_target_dictionary[drone_name] = assigned_target
                 print(f"The VLM has assigned waypoint {assigned_target.name} to Drone {drone_name}")
                 break
-        else:
-            print(f"VLM Error: Waypoint {assigned_target.name} not found in the waypoint queue. Assigning next waypoint from queue...")
-            # backup plan: use the priority queue TODO
-
-            assigned_target = None
+        else: # backup plan if the VLM hallucinates
+            print(f"VLM Error: Waypoint {assigned_target} not found in the waypoint queue. Assigning next waypoint from queue...")
+            if len(waypoint_queue) > 0:
+                # assign the next waypoint from the queue
+                assigned_target = heapq.heappop(waypoint_queue)
+                current_target_dictionary[drone_name] = assigned_target
+                print(f"Assigning waypoint {assigned_target.name} to Drone {drone_name}")
 
 
 
@@ -483,8 +507,8 @@ def parentController():
                     print(f"FALLBACK: Assigning waypoint {next_waypoint.name} to Drone {drone_name}")
                 
                 if len(waypoint_queue) == 0 and TEST_VLM:
-                    print(f"No waypoints available. Requesting new waypoints from VLM model...")
-                
+                    #print(f"No waypoints available. Requesting new waypoints from VLM model...")
+                    pass
                     # use the searched_areas dictionary to ask the VLM model for new waypoints (TODO)
                         
                 
