@@ -41,7 +41,7 @@ def spawn_processes():
 
     processes = {
         "parent_controller": mp.Process(target=parent_controller.start_parent_controller, args=(DRONE_COUNT, shutdown_event)),
-        "websocket_server": mp.Process(target=websocket.websocket_server.start_websocket_server, daemon=True)
+        "websocket_server": mp.Process(target=websocket.websocket_server.start_websocket_server, daemon=False)
     }
 
     # for drone_id in range (DRONE_COUNT):

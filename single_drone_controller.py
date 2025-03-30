@@ -39,7 +39,7 @@ CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT):
     """ Drone process that listens for movement commands and sends status updates. """
     
 
@@ -285,7 +285,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     client = takeOff(drone_name)
 
 
-    while not target_found.value:
+    while not target_found.value and SHUTDOWN_EVENT.is_set():
         current_target = current_target_dictionary[drone_name]
 
         if current_target is not None:
@@ -388,6 +388,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             #status_dictionary[drone_name] = "IDLE"
             time.sleep(10)
 
+    print(f"[Drone {drone_name}] Shutting down")
+    exit(0)
 
 
 

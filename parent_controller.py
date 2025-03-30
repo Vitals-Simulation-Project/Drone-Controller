@@ -9,7 +9,7 @@ import asyncio
 import heapq
 import json
 import multiprocessing as mp
-from ollama import chat
+from ollama import chat # type: ignore
 import os
 from queue import Queue
 import requests
@@ -67,7 +67,7 @@ message_history = [
         'role': 'user',
         'content': (
             "You are a drone operator conducting a simulated search and rescue operation.\n"
-            "You're only task is to analyze incoming images to determine if a person is present.\n"
+            "Your only task is to analyze incoming images to determine if a person is present.\n"
             "You must not speculate or guess, there needs to be a clear reason why you believe a person is present."
         )
     }
@@ -192,7 +192,7 @@ def initialize_drone_controller(id):
 
     send_to_ui(json.dumps(drone_state_message))
 
-    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary))
+    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary), daemon=True)
     process.start()
     drone_controller_processes.append(process)
 
@@ -214,7 +214,10 @@ def loop():
         delete_searched_waypoints()
         process_image_queue()
 
-        time.sleep(5)
+        # print the status of the waypoint queue
+        print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
+        print(f"Received UI queue: {[item for item in RECEIVED_UI_DATA_QUEUE.queue]}")
+        time.sleep(1)
 
 
     print("[Parent] Exiting Loop")
@@ -256,6 +259,7 @@ def assign_waypoints():
                 print(f"[Drone {drone_name}] Assigned Waypoint: {next_waypoint.name}")
 
 def delete_searched_waypoints():
+    global searched_areas_dictionary
 
     for waypoint in searched_areas_dictionary:
         delete_message = {
@@ -264,6 +268,8 @@ def delete_searched_waypoints():
         }
 
         send_to_ui(json.dumps(delete_message))
+    
+    searched_areas_dictionary.clear()
 
 
 
@@ -432,4 +438,12 @@ def start_parent_controller(drone_count: int, shutdown_event):
         SHUTDOWN_EVENT.set()
 
     finally:
-        ...
+        for process in drone_controller_processes:
+            if process.is_alive():
+                process.terminate()
+                process.join()
+        if websocket_client_thread and websocket_client_thread.is_alive():
+            websocket_client_thread.join()
+        if VLM_thread and VLM_thread.is_alive():
+            VLM_thread.join()
+        print("Parent Controller terminated successfully.")
