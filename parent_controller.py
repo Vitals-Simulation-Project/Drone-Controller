@@ -19,6 +19,7 @@ import websockets
 
 # Project Imports
 from classes import Image, VLMOutput, Waypoint
+from helper_functions import reconstruct_image_from_base64
 import local_config
 from model_files.pull_model import load_model
 import single_drone_controller as sdc
@@ -60,6 +61,17 @@ VLM_thread = None
 
 # Shutdown Event
 SHUTDOWN_EVENT = None
+
+message_history = [
+    {
+        'role': 'user',
+        'content': (
+            "You are a drone operator conducting a simulated search and rescue operation.\n"
+            "You're only task is to analyze incoming images to determine if a person is present.\n"
+            "You must not speculate or guess, there needs to be a clear reason why you believe a person is present."
+        )
+    }
+]
 
 def initialize(drone_count: int, shutdown_event):
     '''Initialize Global Variables'''
@@ -200,6 +212,7 @@ def loop():
         send_status_update()
         send_target_update()
         delete_searched_waypoints()
+        process_image_queue()
 
         time.sleep(5)
 
@@ -369,6 +382,31 @@ def process_websocket_message(websocket_data):
         else:
             print("Unexpected message type")
 
+def process_image_queue():
+    '''Handle the queue of images to send to the VLM'''
+
+    if not image_queue.empty():
+        image = image_queue.get() # base64 image
+        print(f"[Parent] Received Image from Drone {image.drone_id}")
+
+        if TEST_VLM:
+            print(f"[Parent] Sending image to VLM model for analysis...")
+            message_history.append({
+                'role': 'user',
+                'content': "Analyze this image and determine if a person is present or not. Set human_present_in_image to True if a human is present.",
+                'images': [image.image]
+            })
+
+            try:
+                response = chat(
+                    messages=message_history,
+                    model=MODEL,
+                    format = VLMOutput.model_json_schema(),
+                    timeout=30
+                )
+
+            except:
+                ...
 
 
 def start_parent_controller(drone_count: int, shutdown_event):
