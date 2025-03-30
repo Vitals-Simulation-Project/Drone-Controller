@@ -348,9 +348,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
                 # Check if the drone is close enough to the target (within a small threshold)
-                distance = ((current_x - waypoint_x)**2 + (current_y - waypoint_y)**2)**0.5
-                #print("Distance to target: ", distance)
-                if distance < 5.0:  # 5-meter tolerance
+                x_distance = abs(current_x - waypoint_x)
+                y_distance = (current_y - waypoint_y)
+                print("Distance to target: ", (x_distance**2 + y_distance**2)**0.5)
+                if x_distance < 10 and y_distance < 5:
                     move_future.join()
                     print(f"Drone {drone_name} reached the target")
                     break

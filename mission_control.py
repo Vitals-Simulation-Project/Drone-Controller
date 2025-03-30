@@ -347,8 +347,9 @@ def parentController():
     print(response.assigned_target_dictionary)
 
     for drone_name in response.assigned_target_dictionary:
+        print(f"Checking drone {drone_name} for assigned target {response.assigned_target_dictionary[drone_name]}")
         if drone_name not in current_target_dictionary:
-            print(f"There is no drone with the ID: {drone_name}")
+            print(f"VLM Error: There is no drone with the ID: {drone_name}")
             continue
 
         assigned_target = int(response.assigned_target_dictionary[drone_name])
@@ -364,9 +365,10 @@ def parentController():
                 # assign the target to the drone
                 current_target_dictionary[drone_name] = assigned_target
                 print(f"The VLM has assigned waypoint {assigned_target.name} to Drone {drone_name}")
+                break
         else:
-            print(f"Waypoint {assigned_target} not found in the waypoint queue. Assigning next waypoint from queue...")
-            # backup plan: use the priority queue
+            print(f"VLM Error: Waypoint {assigned_target.name} not found in the waypoint queue. Assigning next waypoint from queue...")
+            # backup plan: use the priority queue TODO
 
             assigned_target = None
 
