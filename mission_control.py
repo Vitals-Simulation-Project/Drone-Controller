@@ -161,6 +161,11 @@ def fetch_VLM_response(request_id):
     return None
 
 
+
+
+
+
+# main loop
 def parentController():
     manager = mp.Manager() # manager to share data between processes
 
@@ -279,6 +284,96 @@ def parentController():
 
 
 
+
+    # give each drone their initial target waypoint from the VLM
+    if TEST_VLM and len(waypoint_queue) >= DRONE_COUNT:
+        # change drone state to be waiting for waypoint to be assigned
+        status_dictionary[drone_name] = "WAITING"
+
+
+        # ask the VLM model for the next waypoint to be assigned
+        waypoint_queue_str = ", ".join([f"{wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
+        position_str = ", ".join([f"{drone_name} ({current_position_dictionary[drone_name][0]}, {current_position_dictionary[drone_name][1]}, {current_position_dictionary[drone_name][2]})" for drone_name in current_position_dictionary])                    
+        # request = (
+        #     f"Please assign an initial target waypoint to each drone. "
+        #     f"There are {DRONE_COUNT} drones. "
+        #     f"The waypoint queue is: {waypoint_queue_str}. "
+        #     f"Each waypoint has its ID and coordinates in parentheses. "
+        #     f"Only assign waypoints that are in the waypoint queue. "
+        #     f"Please return your response under assigned_target_dictionary. "
+        #     f"Set the current target of a drone by mapping the drone ID (a number) "
+        #     f"to only the waypoint ID (a number). "
+        #     f"Try to assign drones to waypoints that are closest to them. "
+        #     f"The current positions of the drones for which you should assign a position is: {position_str}, "
+        #     f"where each drone has its ID and coordinates in parentheses. "
+        #     f"Do not assign to drones that were not mentioned in the list of current positions."
+        # )
+        request = (
+            f"Assign an initial target waypoint to each drone based on proximity. "
+            f"There are {DRONE_COUNT} drones. The available waypoints 'waypoint name' (coordinates) are: {waypoint_queue_str}. "
+            f"Each waypoint must come from this queue. "
+            f"Assign waypoints to drones closest to them using their current positions 'drone_name' (coordinates): {position_str}. "
+            f"Only assign waypoints to drones listed in the current positions. "
+            f"Return the assignments as 'assigned_target_dictionary' in the format: {{drone_id: waypoint_id}}."
+            f"If there are not enough drones, assign the first {DRONE_COUNT} waypoints to the drones. "
+        )
+
+        print(f"Sending request to VLM model: {request}")         
+        SEND_TO_VLM_QUEUE.put(request)
+        print(f"Request number {request_number} sent")
+    elif len(waypoint_queue) >= DRONE_COUNT: 
+        # assign the first DRONE_COUNT waypoints to the drones
+        print("Assigning waypoints directly...")
+        for i in range(DRONE_COUNT):
+            assigned_target = heapq.heappop(waypoint_queue)
+            current_target_dictionary[str(i)] = assigned_target
+            print(f"Assigning waypoint {assigned_target.name} to Drone {i}")
+    else:
+        print("Not enough waypoints in the queue to assign using the VLM model. Assigning waypoints directly...")
+        for i in range(len(waypoint_queue)):
+            assigned_target = heapq.heappop(waypoint_queue)
+            current_target_dictionary[str(i)] = assigned_target
+            print(f"Assigning waypoint {assigned_target.name} to Drone {i}")
+        
+
+    # wait until the VLM responds
+    while True:
+        response = fetch_VLM_response(request_number - 1)
+        if response is not None:
+            break
+        time.sleep(1)
+    
+    
+    print(response.assigned_target_dictionary)
+
+    for drone_name in response.assigned_target_dictionary:
+        if drone_name not in current_target_dictionary:
+            print(f"There is no drone with the ID: {drone_name}")
+            continue
+
+        assigned_target = int(response.assigned_target_dictionary[drone_name])
+        for i, wp in enumerate(waypoint_queue):
+            if wp.name == assigned_target:
+                assigned_target = wp
+                del waypoint_queue[i]
+                print(f"Deleted waypoint {assigned_target.name} from the queue")
+
+                # fix the heap
+                heapq.heapify(waypoint_queue)
+
+                # assign the target to the drone
+                current_target_dictionary[drone_name] = assigned_target
+                print(f"The VLM has assigned waypoint {assigned_target.name} to Drone {drone_name}")
+        else:
+            print(f"Waypoint {assigned_target} not found in the waypoint queue. Assigning next waypoint from queue...")
+            # backup plan: use the priority queue
+
+            assigned_target = None
+
+
+
+
+
     try:
         while not target_found.value:
             
@@ -321,9 +416,8 @@ def parentController():
 
 
                     # ask the VLM model for the next waypoint to be assigned
-                    waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])
-                    # get current position of the drone
-                    request = f"Please assign a target waypoint to the drone with ID: {drone_name}. The waypoint queue is: {waypoint_queue_str}. Each waypoint has it's ID and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. The current target dictionary is: {str(current_target_dictionary)}. Please return your response under assigned_target_dictionary. Set the current target of a drone by mapping the drone ID to only the waypoint ID (a number). Try to assign drones to waypoints that are closest to them. The current position of this drone is: {current_position_dictionary[drone_name]}."
+                    waypoint_queue_str = ", ".join([f"waypoint: {wp.name} ({wp.x}, {wp.y}, {wp.z})" for wp in waypoint_queue])                    
+                    request = f"Please assign a target waypoint to the drone with ID: {drone_name}. The waypoint queue is: {waypoint_queue_str}. Each waypoint has it's ID and coordinates in parentheses. Only assign waypoints that are in the waypoint queue. Please return your response under assigned_target_dictionary. Set the current target of a drone by mapping the drone ID to only the waypoint ID (a number). Try to assign drones to waypoints that are closest to them. The current position of this drone is: {current_position_dictionary[drone_name]}."
                     print(f"Sending request to VLM model: {request}")         
                     SEND_TO_VLM_QUEUE.put(request)
 
