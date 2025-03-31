@@ -332,9 +332,17 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             # print(f"[Drone {drone_name}] Rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
 
+            # get the bigger of current height + CRUISING_ALTITUDE or waypoint height + CRUISING_ALTITUDE
+            #drone_height = client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance
+            drone_height = -client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position.z_val
+            target_height = max(waypoint_alt + CRUISING_ALTITUDE, drone_height + CRUISING_ALTITUDE)
+            print(f"[Drone {drone_name}] Current z height: ", drone_height)
+            print(f"[Drone {drone_name}] Current recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
+            print(f"[Drone {drone_name}] Target height: {target_height}")         
+
             # move up to cruising altitude
-            client.moveToZAsync(-(waypoint_alt + CRUISING_ALTITUDE), VELOCITY, vehicle_name=drone_name).join()
-            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + CRUISING_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+            client.moveToZAsync(-target_height, VELOCITY, vehicle_name=drone_name).join()
+            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:
                 if current_target_dictionary[drone_name].name != current_target.name: 
@@ -366,7 +374,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                     client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
                     #print("rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
 
-                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + CRUISING_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, -(current_z - MIN_ALTITUDE), VELOCITY, vehicle_name=drone_name)
 
 
 
