@@ -345,6 +345,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:
+
+
                 if current_target_dictionary[drone_name].name != current_target.name: 
                     print(f"Drone {drone_name} received a new target while moving to {waypoint_name}, new target is {current_target_dictionary[drone_name].name}")
                     # interrupt movement with hover
@@ -362,6 +364,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
                 position = drone_state.kinematics_estimated.position
                 current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
+
+                current_position_dictionary[drone_name] = (current_x, current_y, current_z)
+
 
 
                 #print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
