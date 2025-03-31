@@ -118,13 +118,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         #camera_name = "front_center"
         img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
         depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
-        print(depth[0].height, depth[0].width)
         print(f"[Drone {drone_name}] Took infrared and depth images")
         
         img1d = np.frombuffer(img, dtype=np.uint8)  # this section is creating the black and white mask to outline anything in the infared
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
         hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-        print(depth[0].height, depth[0].width)
+
         
         lower = np.array([0,0,0], dtype = "uint8")
         upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
