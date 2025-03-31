@@ -17,6 +17,7 @@ import threading
 import time
 import websockets
 import geopy.distance # type: ignore
+import cv2
 
 # Project Imports
 from classes import Image, VLMOutput, Waypoint
@@ -290,49 +291,105 @@ def fetch_VLM_response(request_ids):
     return response if len(response) > 0 else None
 
 
+# def send_request_to_VLM(request, drone_id, waypoint_name, image=None):
+#     """Send a request to the VLM model and return the response in the queue"""
+
+#     message = [ 
+#         # {
+#         # 'role': 'system',
+#         # 'content': (
+#         #     "You are a drone operator conducting a simulated search and rescue mission.\n" 
+#         # )
+#         # },
+#         # {
+#         # 'role': 'assistant',
+#         # 'content': (
+#         #     "Understood. I am ready to assist in the search and rescue mission."                   
+#         # )
+#         # },
+#         { 
+#         'role': 'user',
+#         'content': request,
+#         'images': [image] if image else None
+#         }
+#     ]
+#     response = chat(
+#         messages = message,
+#         model = MODEL,
+#         format = VLMOutput.model_json_schema()
+#     )
+#     print(f"[Parent] VLM Response: {response}")
+#     try:
+#         response = VLMOutput.model_validate_json(response.message.content)
+#     except Exception as e:
+#         print(f"[Parent] Error validating VLM response: {e}")
+#         response = None 
+
+
+#     # convert response from class to dictionary
+#     if response:
+#         response = vars(response)
+#         response["waypoint_name"] = waypoint_name
+    
+#     print(f"[Parent] VLM Response as dictionary: {response}")
+
+#     VLM_RESPONSE_DICTIONARY[drone_id] = response # Put the response in the queue for synchronous retrieval later (TODO: see if this breaks when multiple responses come in)
+
 def send_request_to_VLM(request, drone_id, waypoint_name, image=None):
     """Send a request to the VLM model and return the response in the queue"""
 
-    message = [ 
-        # {
-        # 'role': 'system',
-        # 'content': (
-        #     "You are a drone operator conducting a simulated search and rescue mission.\n" 
-        # )
-        # },
-        # {
-        # 'role': 'assistant',
-        # 'content': (
-        #     "Understood. I am ready to assist in the search and rescue mission."                   
-        # )
-        # },
-        { 
-        'role': 'user',
-        'content': request,
-        'images': [image] if image else None
+    start_time = time.time()
+    data = {
+        "model": MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": request,
+                "images": [image] if image else None
+            }
+        ],
+        "stream": False,
+        "temperature": 0.1,
+        "format": {
+            "type": "object",
+            "properties": {
+                "human_present_in_image": {
+                    "type": "boolean",
+                    "description": "true if human is present in image, false otherwise"
+                },
+            },
+            "required": ["human_present_in_image"]
         }
-    ]
-    response = chat(
-        messages = message,
-        model = MODEL,
-        format = VLMOutput.model_json_schema()
-    )
-    print(f"[Parent] VLM Response: {response}")
-    try:
-        response = VLMOutput.model_validate_json(response.message.content)
-    except Exception as e:
-        print(f"[Parent] Error validating VLM response: {e}")
-        response = None 
-
-
-    # convert response from class to dictionary
-    if response:
-        response = vars(response)
-        response["waypoint_name"] = waypoint_name
+    }
+    response = requests.post(CHAT_API_URL, json=data, timeout=VLM_TIMEOUT)
+    if response.status_code != 200:
+        print(f"[Parent] Error: {response.status_code} - {response.text}")
+        print(f"[Parent] Image from drone {drone_id} at waypoint {waypoint_name} requires manual review.")
+        VLM_RESPONSE_DICTIONARY[drone_id] = None
+        return
     
-    print(f"[Parent] VLM Response as dictionary: {response}")
+    response = response.json()
+    print(f"[Parent] Raw VLM Response: {response} with type {type(response)}")
 
-    VLM_RESPONSE_DICTIONARY[drone_id] = response # Put the response in the queue for synchronous retrieval later (TODO: see if this breaks when multiple responses come in)
+
+
+    # construct the response dictionary from the response
+    try:
+        content = json.loads(response["message"]["content"])
+        response_data = {
+            "human_present_in_image": content["human_present_in_image"],
+            "waypoint_name": waypoint_name,
+            "response_time": time.time() - start_time
+        }
+    except Exception as e:
+        print(f"[Parent] Error extracting VLM response: {e}")
+        VLM_RESPONSE_DICTIONARY[drone_id] = None
+        return
+
+    
+    print(f"[Parent] VLM Response as dictionary: {response_data}")
+
+    VLM_RESPONSE_DICTIONARY[drone_id] = response_data # Put the response in the queue for synchronous retrieval later (TODO: see if this breaks when multiple responses come in)
 
 
 
@@ -454,17 +511,32 @@ def process_vlm_response():
 
                 # open the image in a new window to show the user
                 image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene.png")
-                os.startfile(image_path)
+                print("Press y to confirm human is present, or any other key to continue searching. Automatically closes in 10 seconds.")
+
+                img = cv2.imread(image_path)
+                cv2.imshow("Potential Target", img) ## comment these back in when testing it will show u what it is seeing
+                key_press = cv2.waitKey(10000) # wait for 10 seconds for user input 
+                cv2.destroyAllWindows()
+                cv2.waitKey(1) # needed to ensure cv2 closes properly
 
 
-                user_input = input("Press y to confirm the human is present, or any other key to continue searching...")
+
+
                 # if the user confirms the human is present, set the target_found variable to True
-                if user_input.lower() == "y":
+                if key_press == ord('y'):
                     print("User confirmed human is present.")
                     target_found.value = True
                     SHUTDOWN_EVENT.set() # set the shutdown event to stop the simulation
+
+                    # change the image name to indicate it was the intended target
+                    new_image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene_CORRECT_TARGET.png")
+                    os.rename(image_path, new_image_path)                     
                 else:
                     print("User did not confirm human is present. Continuing search...")
+
+                    # change the image name to indicate it was a potential target
+                    new_image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene_POTENTIAL_TARGET.png")
+                    os.rename(image_path, new_image_path)
             else:
                 print(f"[Parent] Drone {drone_name} did not find a human in the image taken at waypoint {response['waypoint_name']}")
 
