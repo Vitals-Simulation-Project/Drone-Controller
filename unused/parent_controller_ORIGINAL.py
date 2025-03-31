@@ -34,7 +34,7 @@ VLM_TIMEOUT = 600     # time out for VLM model in seconds
 MODEL = "gemma3:4b"
 CHAT_API_URL = "http://localhost:11434/api/chat"
 
-VLM_RESPONSE_DICTIONARY = {} # dictionary to store VLM responses, maps request number to the response
+VLM_RESPONSE_LIST = {} # dictionary to store VLM responses, maps request number to the response
 SEND_TO_VLM_QUEUE = Queue() # Queue to store requests to be sent to the VLM model
 request_number = 1 # the next request number to be assigned
 
@@ -281,17 +281,21 @@ def delete_searched_waypoints():
 
 def fetch_VLM_response(request_ids):
     """Synchronous function to get data from the VLM response queue"""
-    global VLM_RESPONSE_DICTIONARY
+    global VLM_RESPONSE_LIST
     response = []
     for request_id in request_ids:
-        if request_id in VLM_RESPONSE_DICTIONARY:
-            response.append(VLM_RESPONSE_DICTIONARY[request_id])
-            del VLM_RESPONSE_DICTIONARY[request_id]
+        if request_id in VLM_RESPONSE_LIST:
+            response.append(VLM_RESPONSE_LIST[request_id])
+            del VLM_RESPONSE_LIST[request_id]
     return response if len(response) > 0 else None
 
 
-def send_request_to_VLM(request, drone_id, image=None):
+def send_request_to_VLM(request, image=None):
     """Send a request to the VLM model and return the response in the queue"""
+
+    global request_number
+    request_id = request_number # store the request number for the response
+    request_number += 1 # increment the request number for the next request
 
     message = [ 
         {
@@ -323,7 +327,7 @@ def send_request_to_VLM(request, drone_id, image=None):
     except Exception as e:
         print(f"[Parent] Error validating VLM response: {e}")
         response = None 
-    VLM_RESPONSE_DICTIONARY[drone_id] = response # Put the response in the queue for synchronous retrieval later (TODO: see if this breaks when multiple responses come in)
+    VLM_RESPONSE_LIST[request_id] = response # Put the response in the queue for synchronous retrieval later
 
 def start_VLM_thread():
     """Start the VLM thread to handle requests and responses"""
@@ -331,10 +335,12 @@ def start_VLM_thread():
     while True:
         if not SEND_TO_VLM_QUEUE.empty():
             request = SEND_TO_VLM_QUEUE.get()
-            if len(request) > 2: # for image requests
-                send_request_to_VLM(request[0], request[1], request[2])
-            else: # for assigning waypoints
-                send_request_to_VLM(request[0], request[1], None)
+            print(f"Sending request ID {request_number} to VLM model")
+            if len(request) > 1:
+                image = request[1]
+                send_request_to_VLM(request[0], image)
+            else:
+                send_request_to_VLM(request)            
         time.sleep(1)  # Give some time between cycles
 
 async def send_message():
@@ -421,32 +427,28 @@ def process_image_queue():
 
 
         if TEST_VLM:
-            request = f"Determine if a human is present in this image. If you are certain that a human is present, set human_present_in_image to true. Otherwise set human_present_in_image to false."
+            print(f"[Parent] Sending image to VLM model for analysis...")
+            request = f"Analyze the image and determine if a human is present. If you are certain that a human is present, set human_present_in_image to true. Otherwise set human_present_in_image to false. Leave all other fields empty."
             
-            #request_dictionary[image.drone_id].append(request_number) # store the request number for the response
-            SEND_TO_VLM_QUEUE.put((request, image.drone_id, image.image))
+            request_dictionary[image.drone_id].append(request_number) # store the request number for the response
+            SEND_TO_VLM_QUEUE.put((request, image.image))
 
-            print(f"[Parent] Drone {image.drone_id} sent image to VLM model for analysis")
+            print(f"[Parent] Drone {image.drone_id} sent request ID {request_number} to VLM model")
     
+    # if len(VLM_RESPONSE_LIST) > 0:
+    #     for drone_name, request_ids in request_dictionary.items():
+    #         responses = fetch_VLM_response(request_ids) # get the response from the VLM response queue
+            
+            
 
-def process_vlm_response():
-    '''Handle the VLM response from the queue'''
+    #         print(f"[Parent] Response: {response}")
 
-    for drone_name in VLM_RESPONSE_DICTIONARY:
-        response = VLM_RESPONSE_DICTIONARY[drone_name]
 
-        if response:
-            # check if the response says there is a human present or not
-            if response.human_present_in_image:
-                print(f"[Parent] Drone {drone_name} found a human in the image!")
-                target_found.value = True
-            else:
-                print(f"[Parent] Drone {drone_name} did not find a human in the image.")
+    #         # check if the response contains a human
+    #         if response.human_present_in_image:
+    #             print(f"[Parent] Human detected in image from drone {image.drone_id}")
 
-            # remove the request from the dictionary
-            VLM_RESPONSE_DICTIONARY[drone_name] = None
-    
-    print("[Parent] VLM Response Processed")
+    #         request_dictionary[drone_name].remove(request_id) # remove the request ID from the drone's requests
 
 
 
@@ -456,7 +458,7 @@ def loop():
     print("[Parent] Entering Loop")
 
     while not SHUTDOWN_EVENT.is_set() and not target_found.value:
-        print("Loop running...")
+        
         websocket_data = fetch_websocket_data()
         process_websocket_message(websocket_data)
 
@@ -465,7 +467,6 @@ def loop():
         send_target_update()
         delete_searched_waypoints()
         process_image_queue()
-        process_vlm_response()
 
         
         #print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
