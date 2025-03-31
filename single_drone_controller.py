@@ -73,9 +73,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             _, buffer = cv2.imencode('.png', img_gray)  # Encode the image as PNG
             base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
         else:
-            img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
-            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png on disk
-            _, buffer = cv2.imencode('.png', img_rgb)  # Encode the image as PNG
+            img_rgv = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
+            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgv) # write to png on disk
+            _, buffer = cv2.imencode('.png', img_rgv)  # Encode the image as PNG
             base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
 
     
@@ -118,15 +118,19 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         #camera_name = "front_center"
         img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
         depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
+        print(depth[0].height, depth[0].width)
         print(f"[Drone {drone_name}] Took infrared and depth images")
+        
         img1d = np.frombuffer(img, dtype=np.uint8)  # this section is creating the black and white mask to outline anything in the infared
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
         hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
-
+        print(depth[0].height, depth[0].width)
+        
         lower = np.array([0,0,0], dtype = "uint8")
         upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
         mask = cv2.inRange(hsv, lower, upper)   
+        #here 147456
         cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
         cv2.waitKey(0)
         try:     
@@ -141,7 +145,6 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
     def confirm_target_search(client, drone_name, center_x, center_y, side_length, altitude, speed):
         global running
-        
         half_side = side_length / 2  
 
         # Waypoints for target to be centered
@@ -151,15 +154,13 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             (center_x + half_side, center_y + half_side),  # Top-right
             (center_x - half_side, center_y + half_side),  # Top-left
         ]
-
         for x, y in square_corners: 
             client.moveToPositionAsync(
-                x, y, -MIN_ALTITUDE, speed,
+                x, y, altitude, speed,
                 drivetrain=airsim.DrivetrainType.ForwardOnly,
                 yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0),
                 vehicle_name=drone_name  
             ).join()
-
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, center_x, center_y), vehicle_name=drone_name).join()  
             client.hoverAsync(vehicle_name=drone_name)
             time.sleep(5)
@@ -290,13 +291,14 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             
         #client.moveByVelocityBodyFrameAsync(5,0,0,distance/5).join() # travels to the target
         #if i need to collision avodiance
+        
         stopwatch.stop()
         stopwatch.reset()
         state = client.getMultirotorState(vehicle_name=drone_name)
         currentposition = state.kinematics_estimated.position
         #print(currentposition)
         time.sleep(1) # gives time to stop
-
+        
         if( distance > 80):
             #print("to far doing a waypoint")
             waypoint_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
@@ -327,7 +329,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             print(f"[Drone {drone_name}] Moving to Waypoint {waypoint_name}")
             # print(f"[Drone {drone_name}] Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
             # print(f"[Drone {drone_name}] Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
-
+    
             # print(f"[Drone {drone_name}] Rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
 
