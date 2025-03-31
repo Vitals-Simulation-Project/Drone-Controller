@@ -446,6 +446,7 @@ def process_vlm_response():
             # remove the request from the dictionary
             VLM_RESPONSE_DICTIONARY[drone_name] = None
     
+    print("[Parent] VLM Response Processed")
 
 
 
