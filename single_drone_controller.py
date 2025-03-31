@@ -20,8 +20,9 @@ from helper_functions import unreal_to_gps
 
 # Constants
 MIN_ALTITUDE = 10
-MIN_FORWARD_DISTANCE = 15
-VELOCITY = 15
+CRUISING_ALTITUDE = 50
+MIN_FORWARD_DISTANCE = 10
+VELOCITY = 20
 
 WAYPOINT_ALTITUDE = -15            # Fixed altitude (negative for AirSim)
 WAYPOINT_SIDE_LENGTH = 20          # Square size
@@ -331,7 +332,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             # print(f"[Drone {drone_name}] Rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
             client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
 
-            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+            # move up to cruising altitude
+            client.moveToZAsync(-(waypoint_alt + CRUISING_ALTITUDE), VELOCITY, vehicle_name=drone_name).join()
+            move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + CRUISING_ALTITUDE, VELOCITY, vehicle_name=drone_name)
 
             while True:
                 if current_target_dictionary[drone_name].name != current_target.name: 
@@ -358,12 +361,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                     #print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                     #print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance)
                     # move z up
-                    client.hoverAsync().join()
-                    client.moveToZAsync(current_z - (MIN_ALTITUDE / 2), VELOCITY / 2, vehicle_name=drone_name).join()
+                    #client.hoverAsync().join()
+                    client.moveToZAsync(current_z - MIN_ALTITUDE, VELOCITY / 2, vehicle_name=drone_name).join()
                     client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
                     #print("rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
 
-                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + CRUISING_ALTITUDE, VELOCITY, vehicle_name=drone_name)
 
 
 
@@ -371,10 +374,13 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 x_distance = abs(current_x - waypoint_x)
                 y_distance = abs(current_y - waypoint_y)
                 if x_distance < 10 and y_distance < 10:
+                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
                     move_future.join()
-                    print(f"[Drone {drone_name}] Reached target")
+                    print(f"[Drone {drone_name}] reached target {waypoint_name} at coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE)
                     FINISHED_SEARCH = True
-                    time.sleep(3)
+                    time.sleep(5)
+                    client.hoverAsync(vehicle_name=drone_name).join()
+                    print(f"Drone {drone_name} is hovering at target {waypoint_name}")
                     break
                 else:
                     #move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
