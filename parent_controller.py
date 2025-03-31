@@ -181,8 +181,8 @@ def initialize_drone_controller(id):
     global drone_controller_processes
 
     drone_name = str(id)
-    current_target_dictionary[drone_name] = None
-    status_dictionary[drone_name] = None
+    current_target_dictionary[drone_name] = None # an instance of the waypoint class
+    status_dictionary[drone_name] = None 
     request_dictionary[drone_name] = []
     current_position_dictionary[drone_name] = None
 
@@ -290,22 +290,22 @@ def fetch_VLM_response(request_ids):
     return response if len(response) > 0 else None
 
 
-def send_request_to_VLM(request, drone_id, image=None):
+def send_request_to_VLM(request, drone_id, waypoint_name, image=None):
     """Send a request to the VLM model and return the response in the queue"""
 
     message = [ 
-        {
-        'role': 'system',
-        'content': (
-            "You are a drone operator conducting a simulated search and rescue mission.\n" 
-        )
-        },
-        {
-        'role': 'assistant',
-        'content': (
-            "Understood. I am ready to assist in the search and rescue mission."                   
-        )
-        },
+        # {
+        # 'role': 'system',
+        # 'content': (
+        #     "You are a drone operator conducting a simulated search and rescue mission.\n" 
+        # )
+        # },
+        # {
+        # 'role': 'assistant',
+        # 'content': (
+        #     "Understood. I am ready to assist in the search and rescue mission."                   
+        # )
+        # },
         { 
         'role': 'user',
         'content': request,
@@ -323,7 +323,18 @@ def send_request_to_VLM(request, drone_id, image=None):
     except Exception as e:
         print(f"[Parent] Error validating VLM response: {e}")
         response = None 
+
+
+    # convert response from class to dictionary
+    if response:
+        response = vars(response)
+        response["waypoint_name"] = waypoint_name
+    
+    print(f"[Parent] VLM Response as dictionary: {response}")
+
     VLM_RESPONSE_DICTIONARY[drone_id] = response # Put the response in the queue for synchronous retrieval later (TODO: see if this breaks when multiple responses come in)
+
+
 
 def start_VLM_thread():
     """Start the VLM thread to handle requests and responses"""
@@ -331,10 +342,11 @@ def start_VLM_thread():
     while True:
         if not SEND_TO_VLM_QUEUE.empty():
             request = SEND_TO_VLM_QUEUE.get()
-            if len(request) > 2: # for image requests
-                send_request_to_VLM(request[0], request[1], request[2])
+            if len(request) > 3: # for image requests
+                print(f"[Parent] Image request sent by drone {request[1]} at waypoint {request[2]}")
+                send_request_to_VLM(request[0], request[1], request[2], request[3])
             else: # for assigning waypoints
-                send_request_to_VLM(request[0], request[1], None)
+                send_request_to_VLM(request[0], request[1], request[2], None)
         time.sleep(1)  # Give some time between cycles
 
 async def send_message():
@@ -421,10 +433,10 @@ def process_image_queue():
 
 
         if TEST_VLM:
-            request = f"Determine if a human is present in this image. If you are certain that a human is present, set human_present_in_image to true. Otherwise set human_present_in_image to false."
+            request = f"Analyze this image and determine if a human is present. Do not speculate or guess, you must be certain that there is a human. If you are certain that a human is present, set human_present_in_image to true. Otherwise set human_present_in_image to false."
             
             #request_dictionary[image.drone_id].append(request_number) # store the request number for the response
-            SEND_TO_VLM_QUEUE.put((request, image.drone_id, image.image))
+            SEND_TO_VLM_QUEUE.put((request, image.drone_id, image.waypoint_name, image.image))
 
             print(f"[Parent] Drone {image.drone_id} sent image to VLM model for analysis")
     
@@ -437,16 +449,29 @@ def process_vlm_response():
 
         if response:
             # check if the response says there is a human present or not
-            if response.human_present_in_image:
-                print(f"[Parent] Drone {drone_name} found a human in the image!")
-                target_found.value = True
+            if response["human_present_in_image"]:
+                print(f"[Parent] Drone {drone_name} found a human in the image taken at waypoint {response['waypoint_name']}")
+
+                # open the image in a new window to show the user
+                image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene.png")
+                os.startfile(image_path)
+
+
+                user_input = input("Press y to confirm the human is present, or any other key to continue searching...")
+                # if the user confirms the human is present, set the target_found variable to True
+                if user_input.lower() == "y":
+                    print("User confirmed human is present.")
+                    target_found.value = True
+                    SHUTDOWN_EVENT.set() # set the shutdown event to stop the simulation
+                else:
+                    print("User did not confirm human is present. Continuing search...")
             else:
-                print(f"[Parent] Drone {drone_name} did not find a human in the image.")
+                print(f"[Parent] Drone {drone_name} did not find a human in the image taken at waypoint {response['waypoint_name']}")
 
             # remove the request from the dictionary
             VLM_RESPONSE_DICTIONARY[drone_name] = None
     
-    print("[Parent] VLM Response Processed")
+    #print("[Parent] VLM Response Processed")
 
 
 
@@ -456,7 +481,7 @@ def loop():
     print("[Parent] Entering Loop")
 
     while not SHUTDOWN_EVENT.is_set() and not target_found.value:
-        print("Loop running...")
+        #print("Loop running...")
         websocket_data = fetch_websocket_data()
         process_websocket_message(websocket_data)
 

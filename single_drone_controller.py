@@ -356,32 +356,30 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 #print("Recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
                 if (client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance < MIN_ALTITUDE or client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_FORWARD_DISTANCE):
                     #print("Height below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
-                    #print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance < MIN_ALTITUDE)
-                    #gpsData = drone_state.gps_location
-                    #client.moveToGPSAsync(gpsData.latitude, gpsData.longitude, gpsData.altitude+5, VELOCITY / 2, vehicle_name=drone_name).join()
+                    #print("Or forward distance below threshold: ", client.getDistanceSensorData(distance_sensor_name='Distance2', vehicle_name=drone_name).distance)
                     # move z up
                     client.hoverAsync().join()
-                    #print("current height was: " + str(current_z))
                     client.moveToZAsync(current_z - (MIN_ALTITUDE / 2), VELOCITY / 2, vehicle_name=drone_name).join()
-                    #print("moving up to ", current_z - (MIN_ALTITUDE / 2))
                     client.rotateToYawAsync(get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y), vehicle_name=drone_name).join()
+                    #print("rotating to face waypoint using yaw: ", get_yaw_angle_to_target(client, drone_name, waypoint_x, waypoint_y))
 
                     move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
 
-                    #print("continuing to: " + str(waypoint_lat) + " " + str(waypoint_lon) + " " + str(waypoint_alt - MIN_ALTITUDE))
 
 
                 # Check if the drone is close enough to the target (within a small threshold)
                 x_distance = abs(current_x - waypoint_x)
-                y_distance = (current_y - waypoint_y)
-                if x_distance < 10 and y_distance < 5:
+                y_distance = abs(current_y - waypoint_y)
+                if x_distance < 10 and y_distance < 10:
                     move_future.join()
                     print(f"[Drone {drone_name}] Reached target")
                     FINISHED_SEARCH = True
+                    time.sleep(3)
                     break
                 else:
-                    move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
-
+                    #move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
+                    #print(f"Drone {drone_name} is moving to target: ", waypoint_name)
+                    pass
                 time.sleep(1)
 
 
@@ -423,7 +421,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
             #print("Current position: ", current_position_dictionary[drone_name])
             status_dictionary[drone_name] = "IDLE"
-            time.sleep(10)
+            time.sleep(5)
 
     print(f"[Drone {drone_name}] Shutting down")
     exit(0)
