@@ -178,7 +178,7 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -40,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
@@ -269,7 +269,7 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -40,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
@@ -361,7 +361,7 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -40,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
@@ -453,7 +453,7 @@
             "Roll": 0,
             "Yaw": 0
           },
-          "Pitch": 0,
+          "Pitch": -40,
           "Roll": 0,
           "Yaw": 0,
           "X": 1,
@@ -534,23 +534,23 @@
     "SubWindows": [
       {
         "WindowID": 0,
-        "CameraName": "front-0",
+        "CameraName": "front-1",
         "ImageType": 0,
-        "VehicleName": "0",
+        "VehicleName": "1",
         "Visible": false
       },
       {
         "WindowID": 1,
-        "CameraName": "front-0",
-        "ImageType": 2,
-        "VehicleName": "0",
+        "CameraName": "front-2",
+        "ImageType": 0,
+        "VehicleName": "2",
         "Visible": false
       },
       {
         "WindowID": 2,
-        "CameraName": "front-0",
-        "ImageType": 7,
-        "VehicleName": "0",
+        "CameraName": "front-3",
+        "ImageType": 0, 
+        "VehicleName": "3",
         "Visible": false
       }
     ]

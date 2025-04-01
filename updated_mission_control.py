@@ -17,7 +17,7 @@ import parent_controller
 import websocket.websocket_server
 
 # Constants
-DRONE_COUNT = 5
+DRONE_COUNT = 3
 processes = {}
 
 def initialize_image_directory():
