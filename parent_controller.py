@@ -462,6 +462,7 @@ def process_websocket_message(websocket_data):
 
     global waypoint_queue
     global current_target_dictionary
+    global status_dictionary
 
     if websocket_data:
         
@@ -486,6 +487,7 @@ def process_websocket_message(websocket_data):
             for drone_name in current_target_dictionary:
                 if current_target_dictionary[drone_name] and current_target_dictionary[drone_name].name == json_data["WaypointID"]:
                     current_target_dictionary[drone_name] = None
+                    time.sleep(3)
                     status_dictionary[drone_name] = "IDLE"
                     print(f"[Drone {drone_name}] had its current target: {json_data['WaypointID']} deleted")
 
@@ -592,7 +594,7 @@ def loop():
         
 
         
-        #print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
+        print(f"[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
         #print(f"Received UI queue: {[item for item in RECEIVED_UI_DATA_QUEUE.queue]}")
         time.sleep(1)
 

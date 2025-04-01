@@ -357,6 +357,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:
+                print(f"[Drone {drone_name}] Current target dictionary: ", current_target_dictionary[drone_name].name if current_target_dictionary[drone_name] is not None else "None")
+                print(f"[Drone {drone_name}] Current target name: ", current_target.name)
                 if current_target_dictionary[drone_name] is None:
                     print(f"[SDC] Drone {drone_name} had its waypoint {waypoint_name} deleted")
                     # interrupt movement with hover
@@ -366,7 +368,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 #print("[Drone {drone_name}] Moving to target: ", current_target_dictionary[drone_name].name)
 
 
-                if current_target_dictionary[drone_name].name != current_target.name: 
+                if current_target_dictionary[drone_name] and current_target_dictionary[drone_name].name != current_target.name: 
                     print(f"Drone {drone_name} received a new target while moving to {waypoint_name}, new target is {current_target_dictionary[drone_name].name}")
                     # interrupt movement with hover
                     client.hoverAsync().join()
