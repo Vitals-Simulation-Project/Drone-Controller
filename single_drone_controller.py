@@ -29,7 +29,7 @@ WAYPOINT_SIDE_LENGTH = 20          # Square size
 WAYPOINT_SPEED = 8                 # Speed (m/s)
 
 CONFIRM_TARGET_ALTITUDE = -10      # Fixed altitude (negative for AirSim)
-CONFIRM_TARGET_SIDE_LENGTH = 10    # Square size
+CONFIRM_TARGET_SIDE_LENGTH = 20    # Square size
 CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
@@ -75,7 +75,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
         else:
             img_rgv = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
-            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgv) # write to png on disk
+            #cv2.imwrite(os.path.normpath(filename + '.png'), img_rgv) # write to png on disk
             _, buffer = cv2.imencode('.png', img_rgv)  # Encode the image as PNG
             base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
 
@@ -125,8 +125,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
         hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
 
-        lower = np.array([0, 0, 80], dtype = "uint8")
-        upper = np.array([255, 20, 100], dtype = "uint8") #can change upper lower if u want to change what gets out lined
+        lower = np.array([0, 0, 70], dtype = "uint8")
+        upper = np.array([255, 60, 255], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
         mask = cv2.inRange(hsv, lower, upper)   
         #here 147456
@@ -164,18 +164,22 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         #     client.hoverAsync(vehicle_name=drone_name)
         #     time.sleep(5)
 
-            # go down to 10 meters above ground
-            # while client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance > 10:
-            #     # get current position
-            #     drone_state = client.getMultirotorState(vehicle_name=drone_name)
-            #     drone_position = drone_state.kinematics_estimated.position
-            #     print(f"[Drone {drone_name} Current altitude: ", drone_position.z_val)
-            #     new_z = drone_position.z_val + 3
-            #     client.moveToZAsync(z=new_z, velocity=5, vehicle_name=drone_name).join()
-            #     time.sleep(0.5)
+
         
-        client.moveByVelocityBodyFrameAsync(-5,0,0,2, vehicle_name = drone_name)
-        time.sleep(2)
+        client.moveByVelocityBodyFrameAsync(-5,0,0,4, vehicle_name = drone_name).join()
+        time.sleep(5)
+        client.hoverAsync(vehicle_name=drone_name).join()
+        time.sleep(5)
+
+        # # go down to 10 meters above ground
+        # while client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance > 5:
+        #     # get current position
+        #     drone_state = client.getMultirotorState(vehicle_name=drone_name)
+        #     drone_position = drone_state.kinematics_estimated.position
+        #     print(f"[Drone {drone_name} Current altitude: ", drone_position.z_val)
+        #     new_z = drone_position.z_val + 3
+        #     client.moveToZAsync(z=new_z, velocity=5, vehicle_name=drone_name).join()
+        #     time.sleep(0.5)
         print(f"[Drone {drone_name}] Taking picture for vlm")
         # take photo for vlm to analyze
         base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
@@ -301,7 +305,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         
         if( distance > 80):
             #print("to far doing a waypoint")
-            waypoint_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
+            waypoint_search(client, drone_name, currentposition.x_val, currentposition.y_val, WAYPOINT_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
         else:
             confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
     
@@ -358,8 +362,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:
-                print(f"[Drone {drone_name}] Current target dictionary: ", current_target_dictionary[drone_name].name if current_target_dictionary[drone_name] is not None else "None")
-                print(f"[Drone {drone_name}] Current target name: ", current_target.name)
+                #print(f"[Drone {drone_name}] Current target dictionary: ", current_target_dictionary[drone_name].name if current_target_dictionary[drone_name] is not None else "None")
+                #print(f"[Drone {drone_name}] Current target name: ", current_target.name)
                 if current_target_dictionary[drone_name] is None:
                     print(f"[SDC] Drone {drone_name} had its waypoint {waypoint_name} deleted")
                     # interrupt movement with hover
@@ -440,12 +444,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
             print(f"[Drone {drone_name}] Current position: ", current_x, current_y, current_z)
 
-            #waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
+            waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
 
 
             # Take a picture
-            base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
-            image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
+            #base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
+            #image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
 
 
 
@@ -457,7 +461,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
         else:
-            #print(f"Drone {drone_name} is waiting for commands.")
+            print(f"Drone {drone_name} is waiting for commands.")
             current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
             current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
             #print("Current position: ", current_position_dictionary[drone_name])
