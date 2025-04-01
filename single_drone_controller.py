@@ -124,8 +124,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
         hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
 
-        lower = np.array([0,0,0], dtype = "uint8")
-        upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
+        lower = np.array([0, 0, 80], dtype = "uint8")
+        upper = np.array([255, 20, 100], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
         mask = cv2.inRange(hsv, lower, upper)   
         cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
@@ -312,7 +312,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     client = takeOff(drone_name)
 
 
-    client.simSetSegmentationObjectID("[\w]*", 0, True);
+    client.simSetSegmentationObjectID("[\w]*", 0, True)
     client.simSetSegmentationObjectID('.*?FoxMasterAi.*?', 215, True)   # fox
     client.simSetSegmentationObjectID('.*?StagMasterAi.*?', 230, True)  # stag
     client.simSetSegmentationObjectID('.*?DoeMasterAi.*?', 200, True)   # doe
