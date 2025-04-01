@@ -20,7 +20,7 @@ from helper_functions import unreal_to_gps
 
 # Constants
 MIN_ALTITUDE = 10
-CRUISING_ALTITUDE = 50
+CRUISING_ALTITUDE = 10
 MIN_FORWARD_DISTANCE = 10
 VELOCITY = 20
 
@@ -310,6 +310,15 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
     # Initialize AirSim client and take off
     client = takeOff(drone_name)
+
+
+    client.simSetSegmentationObjectID("[\w]*", 0, True);
+    client.simSetSegmentationObjectID('.*?FoxMasterAi.*?', 215, True)   # fox
+    client.simSetSegmentationObjectID('.*?StagMasterAi.*?', 230, True)  # stag
+    client.simSetSegmentationObjectID('.*?DoeMasterAi.*?', 200, True)   # doe
+    client.simSetSegmentationObjectID('.*?BP_Brian.*?', 255, True)      # brian 
+    client.simSetSegmentationObjectID('.*SK_Wolf.*?', 255, True)        # white wolf
+    print("Set segmentation object IDs")
 
 
     while not target_found.value and not SHUTDOWN_EVENT.is_set():
