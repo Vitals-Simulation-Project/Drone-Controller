@@ -527,16 +527,16 @@
       },
       {
         "WindowID": 1,
-        "CameraName": "front-0",
-        "ImageType": 2,
-        "VehicleName": "0",
+        "CameraName": "front-1",
+        "ImageType": 0,
+        "VehicleName": "1",
         "Visible": false
       },
       {
         "WindowID": 2,
-        "CameraName": "front-0",
-        "ImageType": 7, 
-        "VehicleName": "0",
+        "CameraName": "front-2",
+        "ImageType": 0, 
+        "VehicleName": "2",
         "Visible": false
       }
     ]

@@ -57,6 +57,7 @@ searched_areas_dictionary = None    # dictionary mapping waypoint names to their
 image_queue = None                  # queue to store images waiting to be processed
 waypoint_queue = None               # priority queue to store waypoints
 img_dir = None                      # directory to store images
+all_waypoints_dictionary = None     # dictionary to store all waypoints in the simulation, including deleted and searched ones
 
 # Keep processes and threads global to avoid early shutdown
 drone_controller_processes = []
@@ -102,6 +103,9 @@ def initialize(drone_count: int, shutdown_event):
 
     global requeued_waypoints_list
     requeued_waypoints_list = manager.list()
+
+    global all_waypoints_dictionary
+    all_waypoints_dictionary = manager.dict()
 
     global image_queue
     image_queue = manager.Queue()
@@ -199,7 +203,7 @@ def initialize_drone_controller(id):
 
     send_to_ui(json.dumps(drone_state_message))
 
-    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT, requeued_waypoints_list), daemon=True)
+    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT, requeued_waypoints_list, all_waypoints_dictionary), daemon=True)
     process.start()
     drone_controller_processes.append(process)
 
@@ -547,7 +551,8 @@ def process_vlm_response():
 
                 # if the user confirms the human is present, set the target_found variable to True
                 if key_press == ord('y'):
-                    print("User confirmed human is present.")
+                    print(f"User confirmed human is present at {all_waypoints_dictionary[response['waypoint_name']][0]}")
+                    print(f"GPS coordinates: {all_waypoints_dictionary[response['waypoint_name']][1]}")
                     target_found.value = True
                     SHUTDOWN_EVENT.set() # set the shutdown event to stop the simulation
 

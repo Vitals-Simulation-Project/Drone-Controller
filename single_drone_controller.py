@@ -41,7 +41,7 @@ CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT, requeued_waypoints_list):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT, requeued_waypoints_list, all_waypoints_dictionary):
     """ Drone process that listens for movement commands and sends status updates. """
     
 
@@ -349,6 +349,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             waypoint_x = current_target.x
             waypoint_y = current_target.y
             waypoint_z = current_target.z
+
+            all_waypoints_dictionary[waypoint_name] = [(waypoint_lat, waypoint_lon, waypoint_alt), (waypoint_x, waypoint_y, waypoint_z)]
 
             print(f"[Drone {drone_name}] Moving to Waypoint {waypoint_name}")
             # print(f"[Drone {drone_name}] Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
