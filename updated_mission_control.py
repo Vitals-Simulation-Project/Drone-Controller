@@ -31,6 +31,16 @@ def initialize_image_directory():
     # Create image subdirectory for each drone
     for drone_id in range(DRONE_COUNT):
         drone_dir = os.path.join(img_dir, f"drone_{drone_id}")
+         
+        if os.path.exists(drone_dir):
+            for file in os.listdir(drone_dir):
+                file_path = os.path.join(drone_dir, file)
+                
+                if os.path.isfile(file_path):
+                    os.remove(file_path)  # Remove file
+
+            os.rmdir(drone_dir)
+
         if not os.path.exists(drone_dir):
             os.makedirs(drone_dir)
 
