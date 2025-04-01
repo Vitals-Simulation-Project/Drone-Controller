@@ -57,17 +57,23 @@ def waypoint_search(client, center_x, center_y, side_length, altitude, speed):
     
 def create_mask():
     
-    img = client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name=drone)
-    depth = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False)])
+    #img = client.simGetImage(camera_name="front_center", image_type= airsim.ImageType.Infrared, vehicle_name=drone)
+    #depth = client.simGetImages([airsim.ImageRequest("front_center", airsim.ImageType.DepthPerspective, True, False)])
+    img = client.simGetImage(camera_name="front-0", image_type= airsim.ImageType.Infrared, vehicle_name=drone)
+    depth = client.simGetImages([airsim.ImageRequest("front-0", airsim.ImageType.DepthPerspective, True, False)])
+    print(depth[0].height, depth[0].width)
     
     img1d = np.frombuffer(img, dtype=np.uint8)  ## this section is creating the black and white mask to outline anything in the infared
     img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
     hsv = cv2.cvtColor(img_rgb,cv2.COLOR_BGR2HSV)
+    #print(depth[0].height, depth[0].width)
 
     lower = np.array([0,0,0], dtype = "uint8")
     upper = np.array([192,192,192], dtype = "uint8") #can change upper lower if u want to change what gets out lined
 
-    mask = cv2.inRange(hsv, lower, upper)   
+    mask = cv2.inRange(hsv, lower, upper) 
+    
+    # here 36864
     cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
     cv2.waitKey(0)
     try:     
@@ -258,6 +264,18 @@ def CordCalulcation(angle, distance,clockwise):
     else:
         confirm_target_search(client, currentposition.x_val, currentposition.y_val, confirm_target_side_length, currentposition.z_val, confirm_target_speed)
     
+    def MoveToPositionAsyncCollsion(self, X, Y, altitude, velocity, drone_name, timeout_sec = 3e+38 ): # not used needs to be updated the movement we use LATER
+        self.moveToPositionAsync(X,Y,altitude,velocity,drivetrain=airsim.DrivetrainType.ForwardOnly,yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0), vechicle_name= drone_name )
+        t_end = time.time() + 30
+        while (time.time()<t_end): ## need a solution to this its just a bandaid rn 
+            if (self.getDistanceSensorData(distance_sensor_name='Distance').distance<5 or self.getDistanceSensorData(distance_sensor_name='Distance2').distance<5):
+                state = self.getMultirotorState()
+                currentposition = state.kinematics_estimated.positiont
+            
+                self.moveToPositionAsync(currentposition.x_val,currentposition.y_val,altitude-10,velocity,drivetrain=airsim.DrivetrainType.ForwardOnly,yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0), vechicle_name= drone_name )
+                self.moveToPositionAsync(X,Y,currentposition.z_val,velocity,drivetrain=airsim.DrivetrainType.ForwardOnly,yaw_mode=airsim.YawMode(is_rate=False, yaw_or_rate=0), vechicle_name= drone_name )
+                #print("moving up")
+        self.hoverAsync
 
 try:
     state = client.getMultirotorState()
@@ -284,3 +302,9 @@ finally:
     # Disable API control
     client.enableApiControl(False)
     print("Flight operation completed.")
+
+
+
+
+
+    
