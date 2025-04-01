@@ -20,7 +20,7 @@ from helper_functions import unreal_to_gps
 
 # Constants
 MIN_ALTITUDE = 10
-CRUISING_ALTITUDE = 10
+CRUISING_ALTITUDE = 25
 MIN_FORWARD_DISTANCE = 10
 VELOCITY = 20
 
@@ -70,12 +70,12 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         if image_type == airsim.ImageType.Infrared:
             img_gray = cv2.imdecode(img1d, cv2.IMREAD_GRAYSCALE)
-            cv2.imwrite(os.path.normpath(filename + '.png'), img_gray) # write to png on disk
+            #cv2.imwrite(os.path.normpath(filename + '.png'), img_gray) # write to png on disk
             _, buffer = cv2.imencode('.png', img_gray)  # Encode the image as PNG
             base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
         else:
             img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
-            cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png on disk
+            #cv2.imwrite(os.path.normpath(filename + '.png'), img_rgb) # write to png on disk
             _, buffer = cv2.imencode('.png', img_rgb)  # Encode the image as PNG
             base64_image = base64.b64encode(buffer).decode('utf-8')  # Convert to base64
 
@@ -454,7 +454,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
         else:
-            print(f"Drone {drone_name} is waiting for commands.")
+            #print(f"Drone {drone_name} is waiting for commands.")
             current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
             current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
             #print("Current position: ", current_position_dictionary[drone_name])
