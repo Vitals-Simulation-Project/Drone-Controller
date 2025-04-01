@@ -41,7 +41,7 @@ CONFIRM_TARGET_SPEED = 6           # Speed (m/s)
 
 
 
-def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT):
+def singleDroneController(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT, requeued_waypoints_list):
     """ Drone process that listens for movement commands and sends status updates. """
     
 
@@ -311,11 +311,13 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     # Initialize AirSim client and take off
     client = takeOff(drone_name)
 
-    FINISHED_SEARCH = False # flag to indicate if the drone successfully searched an area
 
     while not target_found.value and not SHUTDOWN_EVENT.is_set():
         current_target = current_target_dictionary[drone_name]
-        print(f"[Drone {drone_name}] Current target: ", current_target.name if current_target is not None else "None")
+        #print(f"[Drone {drone_name}] Current target: ", current_target.name if current_target is not None else "None")
+
+        DRONE_ARRIVED = False # flag to indicate if the drone successfully searched an area
+
 
         if current_target is not None:
             status_dictionary[drone_name] = "MOVING"
@@ -336,15 +338,23 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             #drone_height = client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance
             drone_height = -client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position.z_val
             target_height = max(waypoint_alt + CRUISING_ALTITUDE, drone_height + CRUISING_ALTITUDE)
-            print(f"[Drone {drone_name}] Current z height: ", drone_height)
-            print(f"[Drone {drone_name}] Current recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
-            print(f"[Drone {drone_name}] Target height: {target_height}")         
+            #print(f"[Drone {drone_name}] Current z height: ", drone_height)
+            #print(f"[Drone {drone_name}] Current recorded height: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
+            #print(f"[Drone {drone_name}] Target height: {target_height}")         
 
             # move up to cruising altitude
             client.moveToZAsync(-target_height, VELOCITY, vehicle_name=drone_name).join()
+            print(f"[Drone {drone_name}] Moving to cruising height: ", target_height)
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:
+                if current_target_dictionary[drone_name] is None:
+                    print(f"[SDC] Drone {drone_name} had its waypoint {waypoint_name} deleted")
+                    # interrupt movement with hover
+                    client.hoverAsync().join()
+                    DRONE_ARRIVED = False
+                    break
+                #print("[Drone {drone_name}] Moving to target: ", current_target_dictionary[drone_name].name)
 
 
                 if current_target_dictionary[drone_name].name != current_target.name: 
@@ -355,10 +365,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                     current_target.priority = 2 # set the target to a slightly higher priority
 
                     # push the original target back to the queue to be revisited later
-                    heapq.heappush(waypoint_queue, current_target)
+                    requeued_waypoints_list.append(current_target)
                     print(f"Drone {drone_name} pushed target {current_target.name} back to the queue")
 
-                    FINISHED_SEARCH = False
+                    DRONE_ARRIVED = False
                     break
 
                 drone_state = client.getMultirotorState(vehicle_name=drone_name)
@@ -387,10 +397,11 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 x_distance = abs(current_x - waypoint_x)
                 y_distance = abs(current_y - waypoint_y)
                 if x_distance < 10 and y_distance < 10:
+                    status_dictionary[drone_name] = "SEARCHING"
                     move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
                     move_future.join()
-                    print(f"[Drone {drone_name}] reached target {waypoint_name} at coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE)
-                    FINISHED_SEARCH = True
+                    #print(f"[Drone {drone_name}] reached target {waypoint_name} at coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE)
+                    DRONE_ARRIVED = True
                     time.sleep(5)
                     client.hoverAsync(vehicle_name=drone_name).join()
                     print(f"Drone {drone_name} is hovering at target {waypoint_name}")
@@ -402,10 +413,9 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                 time.sleep(1)
 
 
-            if not FINISHED_SEARCH: # handles if the drone was interrupted while moving to the target
+            if not DRONE_ARRIVED: # handles if the drone was interrupted while moving to the target
                 continue
 
-            status_dictionary[drone_name] = "SEARCHING"
             print(f"[Drone {drone_name}] Arrived and Searching {waypoint_name}")
 
             # hover for 5 seconds

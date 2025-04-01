@@ -51,6 +51,7 @@ current_target_dictionary = None    # dictionary to store the current target way
 current_position_dictionary = None  # dictionary to store the current position of each drone
 status_dictionary = None            # dictionary to store status of each drone
 request_dictionary = None           # dictionary that maps drone names to the ID of their request
+requeued_waypoints_list = None      # list of waypoints that have been requeued by a drone
 target_found = None                 # global variable to stop the search loop when the target is found
 searched_areas_dictionary = None    # dictionary mapping waypoint names to their locations that have been searched already
 image_queue = None                  # queue to store images waiting to be processed
@@ -98,6 +99,9 @@ def initialize(drone_count: int, shutdown_event):
 
     global searched_areas_dictionary
     searched_areas_dictionary = manager.dict()
+
+    global requeued_waypoints_list
+    requeued_waypoints_list = manager.list()
 
     global image_queue
     image_queue = manager.Queue()
@@ -195,7 +199,7 @@ def initialize_drone_controller(id):
 
     send_to_ui(json.dumps(drone_state_message))
 
-    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT), daemon=True)
+    process = mp.Process(target=sdc.singleDroneController, args=(drone_name, current_target_dictionary, status_dictionary, target_found, searched_areas_dictionary, image_queue, waypoint_queue, current_position_dictionary, SHUTDOWN_EVENT, requeued_waypoints_list), daemon=True)
     process.start()
     drone_controller_processes.append(process)
 
@@ -230,6 +234,19 @@ def send_target_update():
 def assign_waypoints():
     '''If drone is WAITING, assign a waypoint from queue'''
 
+    global requeued_waypoints_list
+    global waypoint_queue
+    # update queue with the waypoints waiting to be requeued
+    for index, waypoint in enumerate(requeued_waypoints_list):
+        heapq.heappush(waypoint_queue, waypoint)
+        print(f"[Parent] Requeued waypoint {waypoint.name} to the queue")
+        del requeued_waypoints_list[index] # remove the waypoint from the list
+
+
+    
+
+        
+
     # peek at the first waypoint to see if it's user added
     if len(waypoint_queue) > 0:        
         next_waypoint = waypoint_queue[0]
@@ -242,7 +259,7 @@ def assign_waypoints():
             closest_distance = float("inf")
             for drone_name in current_position_dictionary:
                 drone_position = current_position_dictionary[drone_name]
-                if drone_position and status_dictionary[drone_name] != "SEARCHING" and current_target_dictionary[drone_name].priority > 1:
+                if drone_position and status_dictionary[drone_name] != "SEARCHING" and current_target_dictionary[drone_name] and current_target_dictionary[drone_name].priority > 1:
                     distance = (drone_position[0] - next_waypoint.x) ** 2 + (drone_position[1] - next_waypoint.y) ** 2 + (drone_position[2] - next_waypoint.z) ** 2
                     distance = distance ** 0.5 # euclidean distance
                     if distance < closest_distance:
@@ -259,7 +276,7 @@ def assign_waypoints():
 
 
     for drone_name in status_dictionary:    
-        if status_dictionary[drone_name] == "WAITING" or status_dictionary[drone_name] == "IDLE":
+        if status_dictionary[drone_name] == "WAITING" or status_dictionary[drone_name] == "IDLE" or current_target_dictionary[drone_name] == None:
             if len(waypoint_queue) > 0:
                 next_waypoint = heapq.heappop(waypoint_queue)
                 current_target_dictionary[drone_name] = next_waypoint
@@ -443,6 +460,9 @@ def fetch_websocket_data():
 def process_websocket_message(websocket_data):
     '''Handle websocket message sent from UI'''
 
+    global waypoint_queue
+    global current_target_dictionary
+
     if websocket_data:
         
         json_data = json.loads(websocket_data)
@@ -452,21 +472,22 @@ def process_websocket_message(websocket_data):
             # divide by 100 to convert from cm to m
             waypoint = Waypoint(json_data["WaypointID"], json_data["X"] / 100, json_data["Y"] / 100, json_data["Z"] / 100, json_data["Priority"])
             heapq.heappush(waypoint_queue, waypoint)
-            print(f"\n[OVERRIDE] Added waypoint {waypoint.name} to the queue with priority {waypoint.priority}\n")
+            print(f"[ADD OVERRIDE] Added waypoint {waypoint.name} to the queue with priority {waypoint.priority}")
 
         elif json_data["MessageType"] == "DeleteWaypoint":
-
+            print(f"[DELETE OVERRIDE] Deleting waypoint {json_data['WaypointID']}")
             # delete the waypoint from the queue
             for i, wp in enumerate(waypoint_queue):
                 if wp.name == json_data["WaypointID"]:
                     del waypoint_queue[i]
-                    print(f"\n[OVERRIDE] Deleted waypoint {wp.name} from the queue\n")
+                    print(f"[DELETE OVERRIDE] Deleted waypoint {wp.name} from the queue")
                     break
 
             for drone_name in current_target_dictionary:
-                if current_target_dictionary[drone_name] == json_data["WaypointID"]:
+                if current_target_dictionary[drone_name] and current_target_dictionary[drone_name].name == json_data["WaypointID"]:
                     current_target_dictionary[drone_name] = None
-                    status_dictionary[drone_name] = "WAITING"
+                    status_dictionary[drone_name] = "IDLE"
+                    print(f"[Drone {drone_name}] had its current target: {json_data['WaypointID']} deleted")
 
             # fix the heap
             heapq.heapify(waypoint_queue)
@@ -567,6 +588,8 @@ def loop():
         delete_searched_waypoints()
         process_image_queue()
         process_vlm_response()
+
+        
 
         
         #print(f"\n[Parent] Waypoint Queue: {[wp.name for wp in waypoint_queue]}")
