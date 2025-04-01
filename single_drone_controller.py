@@ -130,8 +130,8 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
         mask = cv2.inRange(hsv, lower, upper)   
         #here 147456
-        cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
-        cv2.waitKey(0)
+        #cv2.imshow("Mask",mask) ## comment these back in when testing it will show u what it is seeing
+        #cv2.waitKey(0)
         try:     
             horizontal = np.argwhere(mask)[4][1] # change the first [] to decide how many pixels it needs to see to move
             calculateDistance_angle(client, drone_name, mask, depth[0])
@@ -142,7 +142,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             bool = create_mask(client, drone_name)
             return bool
 
-    def confirm_target_search(client, drone_name, center_x, center_y, side_length, altitude, speed):
+    def confirm_target_search(client, drone_name, center_x, center_y, side_length, altitude, speed, yaw):
         global running
         half_side = side_length / 2  
 
@@ -166,20 +166,29 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
         
-        client.moveByVelocityBodyFrameAsync(-5,0,0,4, vehicle_name = drone_name).join()
-        time.sleep(5)
-        client.hoverAsync(vehicle_name=drone_name).join()
-        time.sleep(5)
+        client.moveByVelocityBodyFrameAsync(-5,0,0,2.5, vehicle_name = drone_name).join()
+        # get current position
+        drone_state = client.getMultirotorState(vehicle_name=drone_name)
+        drone_position = drone_state.kinematics_estimated.position
+        client.moveToPositionAsync(drone_position.x_val, drone_position.y_val, drone_position.z_val, 5, vehicle_name=drone_name).join()
+        time.sleep(1)
 
         # # go down to 10 meters above ground
-        # while client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance > 5:
-        #     # get current position
-        #     drone_state = client.getMultirotorState(vehicle_name=drone_name)
-        #     drone_position = drone_state.kinematics_estimated.position
-        #     print(f"[Drone {drone_name} Current altitude: ", drone_position.z_val)
-        #     new_z = drone_position.z_val + 3
-        #     client.moveToZAsync(z=new_z, velocity=5, vehicle_name=drone_name).join()
-        #     time.sleep(0.5)
+        while client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance > 8:
+            # get current position
+            drone_state = client.getMultirotorState(vehicle_name=drone_name)
+            drone_position = drone_state.kinematics_estimated.position
+            #print(f"[Drone {drone_name} Current altitude: ", client.getDistanceSensorData(distance_sensor_name='Distance', vehicle_name=drone_name).distance)
+            #print(f"[Drone {drone_name}] Current position: ", drone_position.x_val, drone_position.y_val, drone_position.z_val)
+            new_z = drone_position.z_val + 3
+            #print(f"[Drone {drone_name}] Moving to z: ", new_z)
+            client.moveToZAsync(new_z, 5, vehicle_name=drone_name).join()
+            time.sleep(0.5)
+
+        client.rotateToYawAsync(yaw, vehicle_name=drone_name).join()  #rotate to the target again
+        client.hoverAsync(vehicle_name=drone_name).join()
+        time.sleep(3) #sleep to give it time
+        
         print(f"[Drone {drone_name}] Taking picture for vlm")
         # take photo for vlm to analyze
         base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
@@ -307,7 +316,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             #print("to far doing a waypoint")
             waypoint_search(client, drone_name, currentposition.x_val, currentposition.y_val, WAYPOINT_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
         else:
-            confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED)
+            confirm_target_search(client, drone_name, currentposition.x_val, currentposition.y_val, CONFIRM_TARGET_SIDE_LENGTH, currentposition.z_val, CONFIRM_TARGET_SPEED, yaw)
     
 
 
@@ -358,7 +367,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             # move up to cruising altitude
             client.moveToZAsync(-target_height, VELOCITY, vehicle_name=drone_name).join()
-            print(f"[Drone {drone_name}] Moving to cruising height: ", target_height)
+            print(f"[Drone {drone_name}] reached cruising height: ", target_height)
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:

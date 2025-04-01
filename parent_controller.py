@@ -476,7 +476,7 @@ def process_websocket_message(websocket_data):
             print(f"[ADD OVERRIDE] Added waypoint {waypoint.name} to the queue with priority {waypoint.priority}")
 
         elif json_data["MessageType"] == "DeleteWaypoint":
-            print(f"[DELETE OVERRIDE] Deleting waypoint {json_data['WaypointID']}")
+            print(f"[DELETE] Deleting waypoint {json_data['WaypointID']}")
             # delete the waypoint from the queue
             for i, wp in enumerate(waypoint_queue):
                 if wp.name == json_data["WaypointID"]:
