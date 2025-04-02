@@ -28,7 +28,7 @@ import single_drone_controller as sdc
 
 # Developer Settings
 TEST_VLM = True       # set to True if testing with the VLM model, False if not
-RELEASE_BUILD = False  # set to True if running the executable, False if running in editor mode
+RELEASE_BUILD = True  # set to True if running the executable, False if running in editor mode
 VLM_TIMEOUT = 600     # time out for VLM model in seconds
 
 # AI Constants
