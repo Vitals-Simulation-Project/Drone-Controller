@@ -390,7 +390,7 @@ def send_request_to_VLM(request, drone_id, waypoint_name, image=None):
         return
     
     response = response.json()
-    print(f"[Parent] Raw VLM Response: {response} with type {type(response)}")
+    print(f"\n[Parent] Raw VLM Response: {response} with type {type(response)}")
 
 
 
@@ -408,7 +408,7 @@ def send_request_to_VLM(request, drone_id, waypoint_name, image=None):
         return
 
     
-    print(f"[Parent] VLM Response as dictionary: {response_data}")
+    print(f"[Parent] VLM Response as dictionary: {response_data}\n")
 
     VLM_RESPONSE_DICTIONARY[drone_id] = response_data # Put the response in the queue for synchronous retrieval later (TODO: see if this breaks when multiple responses come in)
 
