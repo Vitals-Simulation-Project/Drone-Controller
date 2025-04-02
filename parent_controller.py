@@ -274,7 +274,7 @@ def assign_waypoints():
             if closest_drone:
                 current_target_dictionary[closest_drone] = next_waypoint
                 status_dictionary[closest_drone] = "MOVING"
-                print(f"[Drone {closest_drone}] reassigned to waypoint: {next_waypoint.name}")
+                print(f"[Drone {closest_drone}] Reassigned to waypoint: {next_waypoint.name}")
                 del waypoint_queue[0] # remove the waypoint from the queue
                 heapq.heapify(waypoint_queue) # fix the heap
 
@@ -285,7 +285,7 @@ def assign_waypoints():
                 next_waypoint = heapq.heappop(waypoint_queue)
                 current_target_dictionary[drone_name] = next_waypoint
                 status_dictionary[drone_name] = "MOVING"
-                print(f"[Drone {drone_name}] Assigned Waypoint: {next_waypoint.name}")
+                print(f"[Drone {drone_name}] Assigned waypoint: {next_waypoint.name}")
 
 def delete_searched_waypoints():
     global searched_areas_dictionary
@@ -477,15 +477,15 @@ def process_websocket_message(websocket_data):
             # divide by 100 to convert from cm to m
             waypoint = Waypoint(json_data["WaypointID"], json_data["X"] / 100, json_data["Y"] / 100, json_data["Z"] / 100, json_data["Priority"])
             heapq.heappush(waypoint_queue, waypoint)
-            print(f"[ADD OVERRIDE] Added waypoint {waypoint.name} to the queue with priority {waypoint.priority}")
+            print(f"\n[ADD OVERRIDE] Added waypoint {waypoint.name} to the queue with priority {waypoint.priority}\n")
 
         elif json_data["MessageType"] == "DeleteWaypoint":
-            print(f"[DELETE] Deleting waypoint {json_data['WaypointID']}")
+            print(f"\n[DELETE] Deleting waypoint {json_data['WaypointID']}\n")
             # delete the waypoint from the queue
             for i, wp in enumerate(waypoint_queue):
                 if wp.name == json_data["WaypointID"]:
                     del waypoint_queue[i]
-                    print(f"[DELETE OVERRIDE] Deleted waypoint {wp.name} from the queue")
+                    print(f"\n[DELETE OVERRIDE] Deleted waypoint {wp.name} from the queue\n")
                     break
 
             for drone_name in current_target_dictionary:
@@ -493,7 +493,7 @@ def process_websocket_message(websocket_data):
                     current_target_dictionary[drone_name] = None
                     time.sleep(3)
                     status_dictionary[drone_name] = "IDLE"
-                    print(f"[Drone {drone_name}] had its current target: {json_data['WaypointID']} deleted")
+                    print(f"[PARENT] Drone {drone_name} had its current target: {json_data['WaypointID']} deleted")
 
             # fix the heap
             heapq.heapify(waypoint_queue)
@@ -534,11 +534,11 @@ def process_vlm_response():
         if response:
             # check if the response says there is a human present or not
             if response["human_present_in_image"]:
-                print(f"[Parent] Drone {drone_name} found a human in the image taken at waypoint {response['waypoint_name']}")
+                print("\n[Parent] Drone {drone_name} found a human in the image taken at waypoint {response['waypoint_name']}")
 
                 # open the image in a new window to show the user
                 image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene.png")
-                print("Press y to confirm human is present, or any other key to continue searching. Automatically closes in 10 seconds.")
+                print("[Parent] Press y to confirm human is present, or any other key to continue searching. Automatically closes in 10 seconds.")
 
                 img = cv2.imread(image_path)
                 cv2.imshow("Potential Target", img) ## comment these back in when testing it will show u what it is seeing
@@ -551,24 +551,24 @@ def process_vlm_response():
 
                 # if the user confirms the human is present, set the target_found variable to True
                 if key_press == ord('y'):
-                    print(f"User confirmed human is present at {all_waypoints_dictionary[response['waypoint_name']][0]}")
-                    print(f"GPS coordinates: {all_waypoints_dictionary[response['waypoint_name']][1]}")
+                    print(f"[Parent] User confirmed human is present at world coordinates: {all_waypoints_dictionary[response['waypoint_name']][1]}")
+                    print(f"[Parent] GPS coordinates: {all_waypoints_dictionary[response['waypoint_name']][0]}")
                     target_found.value = True
                     SHUTDOWN_EVENT.set() # set the shutdown event to stop the simulation
 
                     # change the image name to indicate it was the intended target
                     new_image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene_CORRECT_TARGET.png")
                     os.rename(image_path, new_image_path)        
-                    print(f"Renamed image to {new_image_path}")             
+                    #print(f"Renamed image to {new_image_path}")             
                 else:
-                    print("User did not confirm human is present. Continuing search...")
+                    print("[Parent] User did not confirm human is present. Continuing search...")
 
                     # change the image name to indicate it was a potential target
                     new_image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene_POTENTIAL_TARGET.png")
                     os.rename(image_path, new_image_path)
-                    print(f"Renamed image to {new_image_path}")
+                    #print(f"Renamed image to {new_image_path}")
                 
-                print(f"[Drone {drone_name}] continuing to search.")
+                print(f"[Drone {drone_name}] Continuing to search.")
             else:
                 print(f"[Parent] Drone {drone_name} did not find a human in the image taken at waypoint {response['waypoint_name']}")
 
@@ -582,7 +582,7 @@ def process_vlm_response():
 def loop():
     '''Perform loop until end of simulation'''
 
-    print("[Parent] Entering Loop")
+    #print("[Parent] Entering Loop")
 
     while not SHUTDOWN_EVENT.is_set() and not target_found.value:
         #print("Loop running...")
@@ -604,7 +604,7 @@ def loop():
         time.sleep(1)
 
 
-    print("[Parent] Exiting Loop")
+    #print("[Parent] Exiting Loop")
 
     
 

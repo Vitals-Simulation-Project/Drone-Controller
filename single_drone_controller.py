@@ -60,7 +60,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
     def take_forward_picture(drone_name, image_type):
         camera_name = "front-" + drone_name
-        print(f"[Drone {drone_name}] Taking picture from {camera_name}, type of {image_type}")
+        print(f"[Drone {drone_name}] Taking picture from {camera_name}")
         response = client.simGetImage(camera_name=camera_name, image_type=image_type, vehicle_name=drone_name)
         
         filename = os.path.join("images", f"{camera_name}_scene_{image_type}")
@@ -96,7 +96,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         ]
 
         for x, y in square_corners: 
-            print(f"[Drone {drone_name}] Going to Waypoint Corner: ", x, y)
+            #print(f"[Drone {drone_name}] Going to Waypoint Corner: ", x, y)
             client.moveToPositionAsync(
                 x, y, altitude, speed,
                 drivetrain=airsim.DrivetrainType.ForwardOnly,
@@ -108,10 +108,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             time.sleep(5)
             
             if (create_mask(client, drone_name) == True): # take pictures
-                print(f"[Drone {drone_name}] Target found")
+                print(f"[Drone {drone_name}] Potential target found")
                 return
             else:
-                print(f"[Drone {drone_name}] Target not found")
+                print(f"[Drone {drone_name}] Potential target not found")
                 continue
         
     def create_mask(client, drone_name):
@@ -119,7 +119,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         #camera_name = "front_center"
         img = client.simGetImage(camera_name=camera_name, image_type=airsim.ImageType.Infrared, vehicle_name=drone_name)
         depth = client.simGetImages([airsim.ImageRequest(camera_name, airsim.ImageType.DepthPerspective, True, False)], vehicle_name=drone_name)
-        print(f"[Drone {drone_name}] Took infrared and depth images")
+        #print(f"[Drone {drone_name}] Took infrared and depth images")
         
         img1d = np.frombuffer(img, dtype=np.uint8)  # this section is creating the black and white mask to outline anything in the infared
         img_rgb = cv2.imdecode(img1d, cv2.IMREAD_COLOR)
@@ -189,7 +189,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
         client.hoverAsync(vehicle_name=drone_name).join()
         time.sleep(3) #sleep to give it time
         
-        print(f"[Drone {drone_name}] Taking picture for vlm")
+        #print(f"[Drone {drone_name}] Taking picture for vlm")
         # take photo for vlm to analyze
         base64_picture = take_forward_picture(drone_name, airsim.ImageType.Scene)
         image_queue.put(Image(drone_name, "Scene", base64_picture, current_target.name))
@@ -275,7 +275,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             angle = abs(angle -45)
             yaw = yaw - angle
     
-        print(f"[Drone {drone_name}] Rotating to yaw: ", yaw)
+        #print(f"[Drone {drone_name}] Rotating to yaw: ", yaw)
         client.rotateToYawAsync(yaw, vehicle_name=drone_name).join()  #rotate to the target
         time.sleep(1) #sleep to give it time
     
@@ -292,10 +292,10 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             
                 stopwatch.stop()
-                print("moving up ")
+                #print("moving up ")
                 client.moveToPositionAsync(currentposition.x_val,currentposition.y_val , currentposition.z_val-5 ,3, vehicle_name= drone_name).join()
                 #client.moveByVelocityZAsync(3,3,3,3).join()
-                print("done moving up ")
+                #print("done moving up ")
 
                 newdistance = distance - (5 * (stopwatch.duration))
                 stopwatch.start()
@@ -332,7 +332,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
     client.simSetSegmentationObjectID('.*?DoeMasterAi.*?', 200, True)   # doe
     client.simSetSegmentationObjectID('.*?BP_Brian.*?', 255, True)      # brian 
     client.simSetSegmentationObjectID('.*SK_Wolf.*?', 255, True)        # white wolf
-    print("Set segmentation object IDs")
+    #print("Set segmentation object IDs")
 
 
     while not target_found.value and not SHUTDOWN_EVENT.is_set():
@@ -352,7 +352,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             all_waypoints_dictionary[waypoint_name] = [(waypoint_lat, waypoint_lon, waypoint_alt), (waypoint_x, waypoint_y, waypoint_z)]
 
-            print(f"[Drone {drone_name}] Moving to Waypoint {waypoint_name}")
+            print(f"[Drone {drone_name}] Moving to waypoint {waypoint_name}")
             # print(f"[Drone {drone_name}] Going to GPS coordinates: ", waypoint_lat, waypoint_lon, waypoint_alt)
             # print(f"[Drone {drone_name}] Going to Unreal coordinates: ", waypoint_x, waypoint_y, waypoint_z)
     
@@ -369,14 +369,14 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
             # move up to cruising altitude
             client.moveToZAsync(-target_height, VELOCITY, vehicle_name=drone_name).join()
-            print(f"[Drone {drone_name}] reached cruising height: ", target_height)
+            print(f"[Drone {drone_name}] Reached cruising height: ", target_height)
             move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, target_height, VELOCITY, vehicle_name=drone_name)
 
             while True:
                 #print(f"[Drone {drone_name}] Current target dictionary: ", current_target_dictionary[drone_name].name if current_target_dictionary[drone_name] is not None else "None")
                 #print(f"[Drone {drone_name}] Current target name: ", current_target.name)
                 if current_target_dictionary[drone_name] is None:
-                    print(f"[SDC] Drone {drone_name} had its waypoint {waypoint_name} deleted")
+                    print(f"[Drone {drone_name}] Waypoint {waypoint_name} deleted")
                     # interrupt movement with hover
                     client.hoverAsync().join()
                     DRONE_ARRIVED = False
@@ -385,7 +385,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
                 if current_target_dictionary[drone_name] and current_target_dictionary[drone_name].name != current_target.name: 
-                    print(f"Drone {drone_name} received a new target while moving to {waypoint_name}, new target is {current_target_dictionary[drone_name].name}")
+                    print(f"[Drone {drone_name}] Received a new target while moving to {waypoint_name}, new target is {current_target_dictionary[drone_name].name}")
                     # interrupt movement with hover
                     client.hoverAsync().join()
 
@@ -393,7 +393,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
                     # push the original target back to the queue to be revisited later
                     requeued_waypoints_list.append(current_target)
-                    print(f"Drone {drone_name} pushed target {current_target.name} back to the queue")
+                    print(f"[Drone {drone_name}] Pushed target {current_target.name} back to the queue")
 
                     DRONE_ARRIVED = False
                     break
@@ -431,7 +431,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
                     DRONE_ARRIVED = True
                     time.sleep(5)
                     client.hoverAsync(vehicle_name=drone_name).join()
-                    print(f"Drone {drone_name} is hovering at target {waypoint_name}")
+                    print(f"[Drone {drone_name}] Hovering at target {waypoint_name}")
                     break
                 else:
                     #move_future = client.moveToGPSAsync(waypoint_lat, waypoint_lon, waypoint_alt + MIN_ALTITUDE, VELOCITY, vehicle_name=drone_name)
@@ -443,7 +443,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             if not DRONE_ARRIVED: # handles if the drone was interrupted while moving to the target
                 continue
 
-            print(f"[Drone {drone_name}] Arrived and Searching {waypoint_name}")
+            print(f"[Drone {drone_name}] Arrived and is searching {waypoint_name}")
 
             # hover for 5 seconds
             client.hoverAsync(vehicle_name=drone_name).join()
@@ -453,7 +453,7 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
             drone_state = client.getMultirotorState(vehicle_name=drone_name)
             position = drone_state.kinematics_estimated.position
             current_x, current_y, current_z = position.x_val, position.y_val, position.z_val
-            print(f"[Drone {drone_name}] Current position: ", current_x, current_y, current_z)
+            #print(f"[Drone {drone_name}] Current position: ", current_x, current_y, current_z)
 
             waypoint_search(client, drone_name, current_x, current_y, WAYPOINT_SIDE_LENGTH, current_z, WAYPOINT_SPEED)
 
@@ -466,13 +466,13 @@ def singleDroneController(drone_name, current_target_dictionary, status_dictiona
 
 
             current_target_dictionary[drone_name] = None
-            print(f"Drone {drone_name} finished searching {waypoint_name}")
+            print(f"[Drone {drone_name}] Finished searching {waypoint_name}")
             searched_areas_dictionary[waypoint_name] = (waypoint_lat, waypoint_lon, waypoint_alt)
             status_dictionary[drone_name] = "IDLE"
 
 
         else:
-            print(f"Drone {drone_name} is waiting for commands.")
+            #print(f"Drone {drone_name} is waiting for commands.")
             current_position = client.getMultirotorState(vehicle_name=drone_name).kinematics_estimated.position
             current_position_dictionary[drone_name] = (current_position.x_val, current_position.y_val, current_position.z_val)
             #print("Current position: ", current_position_dictionary[drone_name])
