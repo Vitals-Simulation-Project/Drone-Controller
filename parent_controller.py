@@ -534,7 +534,7 @@ def process_vlm_response():
         if response:
             # check if the response says there is a human present or not
             if response["human_present_in_image"]:
-                print("\n[Parent] Drone {drone_name} found a human in the image taken at waypoint {response['waypoint_name']}")
+                print(f"\n[Parent] Drone {drone_name} found a human in the image taken at waypoint {response['waypoint_name']}")
 
                 # open the image in a new window to show the user
                 image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene.png")
@@ -561,7 +561,7 @@ def process_vlm_response():
                     os.rename(image_path, new_image_path)        
                     #print(f"Renamed image to {new_image_path}")             
                 else:
-                    print("[Parent] User did not confirm human is present. Continuing search...")
+                    print(f"[Parent] User did not confirm human is present at {response['waypoint_name']}. Continuing search...")
 
                     # change the image name to indicate it was a potential target
                     new_image_path = os.path.join(img_dir, f"drone_{drone_name}", f"waypoint_{response['waypoint_name']}_Scene_POTENTIAL_TARGET.png")
