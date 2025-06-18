@@ -17,7 +17,7 @@ import parent_controller
 import websocket.websocket_server
 
 # Constants
-DRONE_COUNT = 3 # Number of drones to spawn
+DRONE_COUNT = 5 # Number of drones to spawn
 processes = {}
 
 def initialize_image_directory():
